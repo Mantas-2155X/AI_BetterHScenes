@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using HarmonyLib;
 
 using BepInEx;
@@ -12,7 +12,7 @@ namespace AI_BetterHScenes
     [BepInPlugin(nameof(AI_BetterHScenes), nameof(AI_BetterHScenes), VERSION)][BepInProcess("AI-Syoujyo")]
     public class AI_BetterHScenes : BaseUnityPlugin
     {
-        public const string VERSION = "1.0.0";
+        public const string VERSION = "1.0.1";
 
         private static bool inHScene;
             
@@ -26,8 +26,8 @@ namespace AI_BetterHScenes
         
         private void Awake()
         {
-            disableMap = Config.Bind("Disable map", "Performance Improvements", false, new ConfigDescription("Disable map during H scene"));
-            optimizeCollisionHelpers = Config.Bind("Optimize collisionhelpers", "Performance Improvements", true, new ConfigDescription("Optimize collisionhelpers by letting them update once per frame"));
+            disableMap = Config.Bind("Performance Improvements", "Disable map", false, new ConfigDescription("Disable map during H scene"));
+            optimizeCollisionHelpers = Config.Bind("Performance Improvements", "Optimize collisionhelpers", true, new ConfigDescription("Optimize collisionhelpers by letting them update once per frame"));
 
             disableMap.SettingChanged += delegate
             {
