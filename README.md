@@ -2,8 +2,8 @@
 This plugin fixes HScene performance bugs  
 
 **Current Features:**  
-* Disable map during H  
-* Optimize SkinnedCollisionHelpers by making them update only once per frame  
+* Disable map during H (~10-15 FPS boost)  
+* Optimize SkinnedCollisionHelpers by making them update only once per frame (~15-25 FPS boost)  
 
 **Download:**  
 * Download the latest `AI_BetterHScenes.zip` from https://github.com/Mantas-2155X/AI_BetterHScenes/releases  
@@ -13,3 +13,5 @@ This plugin fixes HScene performance bugs
 
 **Configuration:**  
 * Open the plugin settings and change the settings according to your needs. No need to restart the HScene.  
+
+*Performance improvement values are based from my machine and may differ from your results!*  
