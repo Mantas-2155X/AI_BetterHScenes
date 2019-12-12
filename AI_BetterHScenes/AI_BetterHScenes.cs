@@ -24,24 +24,28 @@ namespace AI_BetterHScenes
         private static VirtualCameraController hCamera;
         
         private static GameObject map;
+        private static GameObject mapSimulation;
         private static List<SkinnedCollisionHelper> collisionHelpers;
         
         private static bool mapShouldEnable; // compatibility with other plugins which might disable the map
+        private static bool mapSimulationShouldEnable; // compatibility with other plugins which might disable the map
         
         private static ConfigEntry<bool> stripMalePantsStartH { get; set; }
         private static ConfigEntry<bool> stripMalePantsChangeAnim { get; set; }
         private static ConfigEntry<bool> unlockCamera { get; set; }
         
         private static ConfigEntry<bool> disableMap { get; set; }
+        private static ConfigEntry<bool> disableMapSimulation { get; set; }
         private static ConfigEntry<bool> optimizeCollisionHelpers { get; set; }
         
         private void Awake()
         {
             stripMalePantsStartH = Config.Bind("QoL", "Strip male pants on H start", true, new ConfigDescription("Strip male/futa pants when starting H"));
-            stripMalePantsChangeAnim = Config.Bind("QoL", "Strip male pants on anim change", false, new ConfigDescription("Strip male/futa pants when changing H animation"));
+            stripMalePantsChangeAnim = Config.Bind("QoL", "Strip male pants on anim change & start", false, new ConfigDescription("Strip male/futa pants when changing H animation & starting H"));
             unlockCamera = Config.Bind("QoL", "Unlock camera movement", true, new ConfigDescription("Unlock camera zoom out / distance limit during H"));
             
             disableMap = Config.Bind("Performance Improvements", "Disable map", false, new ConfigDescription("Disable map during H scene"));
+            disableMapSimulation = Config.Bind("Performance Improvements", "Disable map simulation", false, new ConfigDescription("Disable map simulation during H scene (WARNING: May cause some effects to disappear)"));
             optimizeCollisionHelpers = Config.Bind("Performance Improvements", "Optimize collisionhelpers", true, new ConfigDescription("Optimize collisionhelpers by letting them update once per frame"));
 
             unlockCamera.SettingChanged += delegate
@@ -60,6 +64,15 @@ namespace AI_BetterHScenes
                 
                 map.SetActive(!disableMap.Value);
                 mapShouldEnable = disableMap.Value;
+            };
+            
+            disableMapSimulation.SettingChanged += delegate
+            {
+                if (mapSimulation == null || !inHScene)
+                    return;
+                
+                mapSimulation.SetActive(!disableMapSimulation.Value);
+                mapSimulationShouldEnable = disableMapSimulation.Value;
             };
             
             optimizeCollisionHelpers.SettingChanged += delegate
@@ -116,6 +129,7 @@ namespace AI_BetterHScenes
         }
        
         //-- Disable map during H to improve performance --//
+        //-- Disable map simulation during H to improve performance --//
         //-- Remove hcamera movement limit --//
         [HarmonyPostfix, HarmonyPatch(typeof(HScene), "SetStartVoice")]
         public static void HScene_SetStartVoice_DisableMap_UnlockCamera(HScene __instance)
@@ -123,12 +137,19 @@ namespace AI_BetterHScenes
             inHScene = true;
             
             map = GameObject.Find("map00_Beach");
+            mapSimulation = GameObject.Find("CommonSpace/MapRoot/MapSimulation(Clone)");
             collisionHelpers = new List<SkinnedCollisionHelper>();
             
             if (map != null && disableMap.Value)
             {
                 map.SetActive(false);
                 mapShouldEnable = true;
+            }
+            
+            if (mapSimulation != null && disableMapSimulation.Value)
+            {
+                mapSimulation.SetActive(false);
+                mapSimulationShouldEnable = true;
             }
             
             HSceneFlagCtrl flagCtrl = __instance.ctrlFlag;
@@ -145,19 +166,25 @@ namespace AI_BetterHScenes
         }
         
         //-- Enable map after H if disabled previously --//
+        //-- Enable map simulation after H if disabled previously --//
         [HarmonyPrefix, HarmonyPatch(typeof(HScene), "EndProc")]
         public static void HScene_EndProc_EnableMap()
         {
             inHScene = false;
             
-            if (map == null) 
-                return;
-
-            if (!disableMap.Value && !mapShouldEnable) 
-                return;
+            if(map != null)
+                if (disableMap.Value || mapShouldEnable)
+                {
+                    map.SetActive(true);
+                    mapShouldEnable = false;
+                }
             
-            map.SetActive(true);
-            mapShouldEnable = false;
+            if(mapSimulation != null)
+                if (disableMapSimulation.Value || mapSimulationShouldEnable)
+                {
+                    mapSimulation.SetActive(true);
+                    mapSimulationShouldEnable = false;
+                }
         }
         
         //-- Fix for the massive FPS drop during HScene insert/service positions --//
