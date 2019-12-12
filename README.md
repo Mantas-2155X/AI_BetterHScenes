@@ -1,9 +1,12 @@
 # AI_BetterHScenes
-This plugin fixes HScene performance bugs  
+This plugin fixes HScene performance bugs and adds extra features  
 
 **Current Features:**  
 * Disable map during H (~10-15 FPS boost)  
 * Optimize SkinnedCollisionHelpers by making them update only once per frame (~15-25 FPS boost)  
+* Toggle HCamera position, zoom locks  
+* Strip male/futa pants on H start  
+* Strip male/futa pants on H anim change  
 
 **Download:**  
 * Download the latest `AI_BetterHScenes.zip` from https://github.com/Mantas-2155X/AI_BetterHScenes/releases  
