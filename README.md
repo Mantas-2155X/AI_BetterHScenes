@@ -3,8 +3,10 @@ This plugin fixes HScene performance bugs and adds extra features
 
 **Current Features:**  
 * Disable map during H (~10-15 FPS boost)  
+* Disable map simulation during H (~8-13 FPS boost)  
 * Optimize SkinnedCollisionHelpers (~15-25 FPS boost during Service and Insert)  
-* Toggle ON/OFF H Camera position, zoom maximum locks  
+
+* Toggle ON/OFF H Camera maximum position and zoom maximum limits  
 * Strip male/futa pants on H start  
 * Strip male/futa pants on H anim change  
 
@@ -18,4 +20,5 @@ This plugin fixes HScene performance bugs and adds extra features
 * Open the plugin settings and change the settings according to your needs. No need to restart the HScene.  
 
 *Performance improvement values are based from my machine and may differ from your results!*  
-*All of the features can be turned on and off*
+*All of the features can be turned on and off*  
+*Disabling map simulation may also disable some effects!*  
