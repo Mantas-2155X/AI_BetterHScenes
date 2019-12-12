@@ -1,10 +1,15 @@
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+
 using HarmonyLib;
 
 using BepInEx;
 using BepInEx.Harmony;
 using BepInEx.Configuration;
 
+using AIProject;
+using Manager;
 using UnityEngine;
 
 namespace AI_BetterHScenes
@@ -12,22 +17,41 @@ namespace AI_BetterHScenes
     [BepInPlugin(nameof(AI_BetterHScenes), nameof(AI_BetterHScenes), VERSION)][BepInProcess("AI-Syoujyo")]
     public class AI_BetterHScenes : BaseUnityPlugin
     {
-        public const string VERSION = "1.0.1";
+        public const string VERSION = "1.1.0";
 
         private static bool inHScene;
-            
+
+        private static VirtualCameraController hCamera;
+        
         private static GameObject map;
         private static List<SkinnedCollisionHelper> collisionHelpers;
         
         private static bool mapShouldEnable; // compatibility with other plugins which might disable the map
+        
+        private static ConfigEntry<bool> stripMalePantsStartH { get; set; }
+        private static ConfigEntry<bool> stripMalePantsChangeAnim { get; set; }
+        private static ConfigEntry<bool> unlockCamera { get; set; }
         
         private static ConfigEntry<bool> disableMap { get; set; }
         private static ConfigEntry<bool> optimizeCollisionHelpers { get; set; }
         
         private void Awake()
         {
+            stripMalePantsStartH = Config.Bind("QoL", "Strip male pants on H start", true, new ConfigDescription("Strip male/futa pants when starting H"));
+            stripMalePantsChangeAnim = Config.Bind("QoL", "Strip male pants on anim change", false, new ConfigDescription("Strip male/futa pants when changing H animation"));
+            unlockCamera = Config.Bind("QoL", "Unlock camera movement", true, new ConfigDescription("Unlock camera zoom out / distance limit during H"));
+            
             disableMap = Config.Bind("Performance Improvements", "Disable map", false, new ConfigDescription("Disable map during H scene"));
             optimizeCollisionHelpers = Config.Bind("Performance Improvements", "Optimize collisionhelpers", true, new ConfigDescription("Optimize collisionhelpers by letting them update once per frame"));
+
+            unlockCamera.SettingChanged += delegate
+            {
+                if (hCamera == null || !inHScene)
+                    return;
+                
+                hCamera.isLimitDir = !unlockCamera.Value;
+                hCamera.isLimitPos = !unlockCamera.Value;
+            };
 
             disableMap.SettingChanged += delegate
             {
@@ -44,26 +68,80 @@ namespace AI_BetterHScenes
                     return;
 
                 foreach (var helper in collisionHelpers)
+                {
+                    if (helper == null)
+                        return;
+                    
+                    if (!optimizeCollisionHelpers.Value)
+                        helper.forceUpdate = true;
+                    
                     helper.updateOncePerFrame = optimizeCollisionHelpers.Value;
+                }
             };
+
+            var harmony = new Harmony("AI_BetterHScenes_1");
+
+            //-- Strip male/futa pants when starting H --//
+            var type_1 = typeof(HScene).GetNestedTypes(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public).Single(x => x.Name.StartsWith("<StartAnim>c__Iterator1"));
+            var method_1 = type_1.GetMethod("MoveNext");
+            var postfix_1 = new HarmonyMethod(typeof(AI_BetterHScenes), nameof(HScene_StartAnim_StripMalePants));
+            harmony.Patch(method_1, null, postfix_1);
+            
+            //-- Strip male/futa pants when changing animation --//
+            var type_2 = typeof(HScene).GetNestedTypes(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public).Single(x => x.Name.StartsWith("<ChangeAnimation>c__Iterator2"));
+            var method_2 = type_2.GetMethod("MoveNext");
+            var postfix_2 = new HarmonyMethod(typeof(AI_BetterHScenes), nameof(HScene_ChangeAnimation_StripMalePants));
+            harmony.Patch(method_2, null, postfix_2);
             
             HarmonyWrapper.PatchAll(typeof(AI_BetterHScenes));
         }
+
+        public static void HScene_StartAnim_StripMalePants() => HScene_StripMalePants(stripMalePantsStartH.Value);
+        public static void HScene_ChangeAnimation_StripMalePants() => HScene_StripMalePants(stripMalePantsChangeAnim.Value);
         
+        //-- Strip male/futa pants when starting H --//
+        //-- Strip male/futa pants when changing animation --//
+        public static void HScene_StripMalePants(bool shouldStrip)
+        {
+            if (!shouldStrip || !Singleton<HSceneManager>.IsInstance())
+                return;
+
+            HSceneManager manager = Singleton<HSceneManager>.Instance;
+            if (manager == null || manager.Player == null)
+                return;
+
+            AIChara.ChaControl ply = manager.Player.ChaControl;
+            if ((ply.sex == 0 || manager.bFutanari) && ply.IsClothesStateKind(1))
+                ply.SetClothesState(1, 2);
+        }
+       
         //-- Disable map during H to improve performance --//
+        //-- Remove hcamera movement limit --//
         [HarmonyPostfix, HarmonyPatch(typeof(HScene), "SetStartVoice")]
-        public static void HScene_SetStartVoice_DisableMap()
+        public static void HScene_SetStartVoice_DisableMap_UnlockCamera(HScene __instance)
         {
             inHScene = true;
             
             map = GameObject.Find("map00_Beach");
             collisionHelpers = new List<SkinnedCollisionHelper>();
+            
+            if (map != null && disableMap.Value)
+            {
+                map.SetActive(false);
+                mapShouldEnable = true;
+            }
+            
+            HSceneFlagCtrl flagCtrl = __instance.ctrlFlag;
+            if (flagCtrl == null || flagCtrl.cameraCtrl == null)
+                return;
 
-            if (map == null || !disableMap.Value) 
+            hCamera = flagCtrl.cameraCtrl;
+
+            if (!unlockCamera.Value)
                 return;
             
-            map.SetActive(false);
-            mapShouldEnable = true;
+            hCamera.isLimitDir = false;
+            hCamera.isLimitPos = false;
         }
         
         //-- Enable map after H if disabled previously --//
