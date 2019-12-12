@@ -30,6 +30,7 @@ namespace AI_BetterHScenes
         private static bool mapShouldEnable; // compatibility with other plugins which might disable the map
         private static bool mapSimulationShouldEnable; // compatibility with other plugins which might disable the map
         
+        private static ConfigEntry<bool> forceTearsOnWeakness { get; set; }
         private static ConfigEntry<bool> stripMalePantsStartH { get; set; }
         private static ConfigEntry<bool> stripMalePantsChangeAnim { get; set; }
         private static ConfigEntry<bool> unlockCamera { get; set; }
@@ -40,6 +41,7 @@ namespace AI_BetterHScenes
         
         private void Awake()
         {
+            forceTearsOnWeakness = Config.Bind("QoL", "Tears when weakness is reached", true, new ConfigDescription("Make girl cry when weakness is reached during H"));
             stripMalePantsStartH = Config.Bind("QoL", "Strip male pants on H start", true, new ConfigDescription("Strip male/futa pants when starting H"));
             stripMalePantsChangeAnim = Config.Bind("QoL", "Strip male pants on anim change & start", false, new ConfigDescription("Strip male/futa pants when changing H animation & starting H"));
             unlockCamera = Config.Bind("QoL", "Unlock camera movement", true, new ConfigDescription("Unlock camera zoom out / distance limit during H"));
@@ -128,6 +130,16 @@ namespace AI_BetterHScenes
                 ply.SetClothesState(1, 2);
         }
        
+        //-- Make girl cry if weakness is reached --//
+        [HarmonyPrefix, HarmonyPatch(typeof(HVoiceCtrl), "SetFace")]
+        public static void HVoiceCtrl_SetFace_ForceTearsOnWeakness(HVoiceCtrl __instance, ref HVoiceCtrl.FaceInfo _face)
+        {
+            if (!inHScene || !forceTearsOnWeakness.Value || !__instance.ctrlFlag.isFaintness)
+                return;
+
+            _face.tear = 1f;
+        }
+        
         //-- Disable map during H to improve performance --//
         //-- Disable map simulation during H to improve performance --//
         //-- Remove hcamera movement limit --//
