@@ -5,7 +5,7 @@ This plugin fixes HScene performance bugs and adds extra features
 * Disable map during H (~10-15 FPS boost)  
 * Disable map simulation during H (~8-13 FPS boost)  
 * Optimize SkinnedCollisionHelpers (~15-25 FPS boost during Service and Insert)  
-
+* Add tears to female character after reaching weakness during H  
 * Toggle ON/OFF H Camera maximum position and zoom maximum limits  
 * Strip male/futa pants on H start  
 * Strip male/futa pants on H anim change  
