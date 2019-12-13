@@ -19,6 +19,11 @@ This plugin fixes HScene performance bugs and adds extra features
 **Configuration:**  
 * Open the plugin settings and change the settings according to your needs. No need to restart the HScene.  
 
+**HScene performance:**  
+* BEFORE: 28.1FPS  
+* MOST OPTIMIZATIONS: 53FPS  
+* ALL OPTIMIZATIONS: 62.3FPS  
+
 *Performance improvement values are based from my machine and may differ from your results!*  
 *All of the features can be turned on and off*  
 *Disabling map simulation may also disable some effects!*  
