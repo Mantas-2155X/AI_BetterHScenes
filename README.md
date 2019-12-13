@@ -9,6 +9,8 @@ This plugin fixes HScene performance bugs and adds extra features
 * Toggle ON/OFF H Camera maximum position and zoom maximum limits  
 * Strip male/futa pants on H start (1)  
 * Strip male/futa pants on H anim change (1)  
+* Change H Point search range  
+* Keep H buttons interactive during orgasm  
 
 **Download:**  
 * Download the latest `AI_BetterHScenes.zip` from https://github.com/Mantas-2155X/AI_BetterHScenes/releases  
