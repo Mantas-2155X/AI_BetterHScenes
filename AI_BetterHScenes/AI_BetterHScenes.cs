@@ -17,7 +17,7 @@ namespace AI_BetterHScenes
     [BepInPlugin(nameof(AI_BetterHScenes), nameof(AI_BetterHScenes), VERSION)][BepInProcess("AI-Syoujyo")]
     public class AI_BetterHScenes : BaseUnityPlugin
     {
-        public const string VERSION = "1.2.0";
+        public const string VERSION = "1.2.1";
 
         private static bool inHScene;
 
@@ -170,6 +170,9 @@ namespace AI_BetterHScenes
             inHScene = true;
             
             map = GameObject.Find("map00_Beach");
+            if (map == null)
+                map = GameObject.Find("map_01_data");
+
             mapSimulation = GameObject.Find("CommonSpace/MapRoot/MapSimulation(Clone)");
             collisionHelpers = new List<SkinnedCollisionHelper>();
 
