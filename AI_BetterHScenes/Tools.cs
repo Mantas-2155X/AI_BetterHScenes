@@ -9,6 +9,41 @@ namespace AI_BetterHScenes
 {
     public static class Tools
     {
+        public static class DraggerData
+        {
+            public static readonly string[] names =
+            {
+                "XYZ",
+                "X",
+                "Y",
+                "Z"
+            };
+        
+            public static readonly Color[] colors =
+            {
+                new Color(0.5f, 0.5f, 0.5f, 0.75f), 
+                new Color(0.5f, 0, 0, 0.75f), 
+                new Color(0, 0.5f, 0, 0.75f), 
+                new Color(0, 0, 0.5f, 0.75f)
+            };
+
+            public static readonly Vector3[] scales =
+            {
+                new Vector3(0.5f, 0.5f, 0.5f),
+                new Vector3(3, 0.5f, 0.5f),
+                new Vector3(0.5f, 3, 0.5f),
+                new Vector3(0.5f, 0.5f, 3)
+            };
+        
+            public static readonly Vector3[] positions =
+            {
+                new Vector3(0, 0, 0),
+                new Vector3(1.5f, 0, 0),
+                new Vector3(0, 1.5f, 0),
+                new Vector3(0, 0, 1.5f)
+            };
+        }
+        
         public static float Remap(float value, float from1, float to1, float from2, float to2) 
         {
             return (value - from1) / (to1 - from1) * (to2 - from2) + from2;
@@ -59,29 +94,21 @@ namespace AI_BetterHScenes
                 var cObj = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 cObj.transform.SetParent(chara.transform);
                 cObj.layer = 10;
-                cObj.name = "DraggerCenter";
-
-                var mat = cObj.GetComponent<Renderer>().material;
-                mat.color = new Color(chara.sex, chara.sex, chara.sex, 0.75f);
-
-                var centerTransform = cObj.transform;
-
-                centerTransform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
-                centerTransform.localPosition = new Vector3(0f, 0f, 0f);
-                centerTransform.eulerAngles = Vector3.zero;
+                cObj.name = "XYZ";
+                cObj.transform.localPosition = Vector3.zero;
+                cObj.transform.eulerAngles = Vector3.zero;
 
                 var centerCopy = Object.Instantiate(cObj);
                 if (centerCopy == null) 
-                    continue;
+                    return;
                 
                 for (int i = 0; i < 3; i++)
-                {
-                    var copy = Object.Instantiate(centerCopy, centerTransform);
-                    copy.AddComponent<DraggerComponent>().SetData(chara.transform, centerTransform, i, AI_BetterHScenes.hCamera);
-                }
-                cObj.SetActive(false);
-
+                    Object.Instantiate(centerCopy, cObj.transform);
+                
                 Object.Destroy(centerCopy);
+                
+                cObj.AddComponent<DraggerComponent>().SetData(AI_BetterHScenes.hCamera);
+                cObj.SetActive(false);
             }
         }
         
@@ -99,7 +126,7 @@ namespace AI_BetterHScenes
                 if(tr == null)
                     continue;
 
-                Transform dragger = tr.Find("DraggerCenter");
+                Transform dragger = tr.Find("XYZ");
                 if (dragger == null || dragger.gameObject == null)
                     continue;
                 

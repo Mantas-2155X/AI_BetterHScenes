@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
@@ -163,7 +163,7 @@ namespace AI_BetterHScenes
             
             foreach (var chara in characters.Where(chara => chara != null && chara.transform != null))
             {
-                Transform dragger = chara.transform.Find("DraggerCenter");
+                Transform dragger = chara.transform.Find("XYZ");
                 if (dragger == null)
                     continue;
                 

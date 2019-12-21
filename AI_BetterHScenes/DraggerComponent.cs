@@ -1,4 +1,6 @@
+using System;
 using System.Collections;
+using System.Linq;
 using UnityEngine;
 using AIProject;
 
@@ -7,119 +9,93 @@ namespace AI_BetterHScenes
     public class DraggerComponent : MonoBehaviour
     {
         private Camera mainCamera;
-        private VirtualCameraController ctrl;
+        private VirtualCameraController cameraCtrl;
         
-        private int axis;
-        private Material mat;
-        private BoxCollider selfCollider;
+        private bool isSelected;
+        private bool isClicked;
+
+        private Transform selectedAxis;
         
         private Vector3 offset;
-        private Vector3 screenPoint;
-
-        private Transform center;
-        private Transform character;
-
-        private string objName;
-        private Vector3 lScale;
-        private Vector3 lPosition;
-        
-        private Color idleColor;
-        private Color selectedColor;
-
-        public bool isHover;
-        public bool isClicked;
-
         private Vector3 lockAngle;
+        private Vector3 screenPoint;
+        
+        private Transform toMove;
         
         private readonly RaycastHit[] hits = new RaycastHit[15];
-        
-        public void SetData(Transform _character, Transform _center, int _axis, VirtualCameraController _hCamera)
+
+        private readonly Color[] selectedColors = new Color[4];
+        private readonly Material[] materials = new Material[4];
+        private readonly Transform[] axisTransforms = new Transform[4];
+        private readonly BoxCollider[] boxColliders = new BoxCollider[4];
+
+        public void SetData(VirtualCameraController hCamera)
         {
-            character = _character;
-            center = _center;
-            axis = _axis;
-
-            selfCollider = gameObject.GetComponent<BoxCollider>();
             mainCamera = Camera.main;
-            ctrl = _hCamera;
-
-            switch (axis)
+            cameraCtrl = hCamera;
+            toMove = transform.parent;
+            
+            for (int i = 0; i < 4; i++)
             {
-                case 0:
-                    objName = "X";
-                    lScale = new Vector3(3, 0.5f, 0.5f);
-                    lPosition = new Vector3(1.5f, 0, 0);
-                    idleColor = new Color(0.75f, 0, 0, 0.75f);
-                    break;
-                case 1:
-                    objName = "Y";
-                    lScale = new Vector3(0.5f, 3, 0.5f);
-                    lPosition = new Vector3(0, 1.5f, 0);
-                    idleColor = new Color(0, 0.75f, 0, 0.75f);
-                    break;
-                case 2:
-                    objName = "Z";
-                    lScale = new Vector3(0.5f, 0.5f, 3);
-                    lPosition = new Vector3(0, 0, 1.5f);
-                    idleColor = new Color(0, 0, 0.75f, 0.75f);
-                    break;
+                axisTransforms[i] = i == 0 ? transform : transform.GetChild(i - 1);
+                axisTransforms[i].name = Tools.DraggerData.names[i];
+
+                axisTransforms[i].localScale = Tools.DraggerData.scales[i];
+                axisTransforms[i].localPosition = Tools.DraggerData.positions[i];
+                axisTransforms[i].eulerAngles = Vector3.zero;
+
+                boxColliders[i] = axisTransforms[i].gameObject.GetComponent<BoxCollider>();
+                
+                materials[i] = axisTransforms[i].gameObject.GetComponent<Renderer>().material;
+                materials[i].color = Tools.DraggerData.colors[i];
+                
+                selectedColors[i] = new Color(materials[i].color.r * 2, materials[i].color.g * 2, materials[i].color.b * 2, 0.75f);
             }
-
-            gameObject.name = objName;
-            
-            transform.localScale = lScale;
-            transform.localPosition = lPosition;
-            transform.eulerAngles = Vector3.zero;
-            
-            selectedColor = new Color(idleColor.r * 1.25f, idleColor.g * 1.25f, idleColor.b * 1.25f, 0.75f);
-
-            mat = gameObject.GetComponent<Renderer>().material;
-            mat.color = idleColor;
         }
-
+        
         private IEnumerator LockCamera()
         {
-            ctrl.CameraAngle = lockAngle;
-            ctrl.NoCtrlCondition = () => isClicked;
+            cameraCtrl.CameraAngle = lockAngle;
+            
+            cameraCtrl.NoCtrlCondition = () => isClicked;
             yield return new WaitUntil(() => !isClicked);
-            ctrl.NoCtrlCondition = () => !isClicked;
+            cameraCtrl.NoCtrlCondition = () => !isClicked;
         }
-
+        
         private void Update()
         {
-            if (ctrl == null || !transform.parent.gameObject.activeSelf)
+            if (cameraCtrl == null || !gameObject.activeSelf)
             {
-                if (isClicked)
-                    isClicked = false;
-                
+                OnDisable();
                 return;
             }
             
             if(isClicked)
                 StartCoroutine(LockCamera());
         }
-        
+
         private void LateUpdate()
         {
-            if (mainCamera == null || ctrl == null || !transform.parent.gameObject.activeSelf)
+            if (cameraCtrl == null || !gameObject.activeSelf)
             {
-                if (isClicked)
-                    isClicked = false;
-                
+                OnDisable();
                 return;
             }
 
-            isHover = false;
+            int selectedIndex = selectedAxis != null ? Array.IndexOf(axisTransforms, selectedAxis) : 0;
+            isSelected = false;
 
             if (!isClicked)
             {
                 Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
                 int hitCount = Physics.RaycastNonAlloc(ray, hits, 250, 1 << 10);
-
+                
                 for (int i = 0; i < hitCount; i++)
-                    if (hits[i].collider == selfCollider)
+                    if (boxColliders.Contains(hits[i].collider))
                     {
-                        isHover = true;
+                        isSelected = true;
+                        selectedAxis = hits[i].collider.transform;
+                        
                         break;
                     }
             }
@@ -129,25 +105,29 @@ namespace AI_BetterHScenes
 
             if (isClicked && !Input.GetKeyDown(KeyCode.Mouse0) && Input.GetKey(KeyCode.Mouse0))
             {
-                Vector3 charaPos = character.position;
+                Vector3 toMovePos = toMove.position;
                 Vector3 mousePos = Input.mousePosition;
             
                 Vector3 curScreenPoint = new Vector3(mousePos.x, mousePos.y, screenPoint.z);
                 Vector3 curPosition = mainCamera.ScreenToWorldPoint(curScreenPoint) + offset;
 
-                character.position = new Vector3(axis == 0 ? curPosition.x : charaPos.x, axis == 1 ? curPosition.y : charaPos.y, axis == 2 ? curPosition.z : charaPos.z);
+                toMove.position = new Vector3(
+                    selectedAxis == axisTransforms[0] || selectedAxis == axisTransforms[1] ? curPosition.x : toMovePos.x,
+                    selectedAxis == axisTransforms[0] || selectedAxis == axisTransforms[2] ? curPosition.y : toMovePos.y,
+                    selectedAxis == axisTransforms[0] || selectedAxis == axisTransforms[3] ? curPosition.z : toMovePos.z
+                );
+                
+                materials[selectedIndex].color = selectedColors[selectedIndex];
             }
 
-            if (isHover)
+            if (isSelected)
             {
-                mat.color = selectedColor;
-
                 if (Input.GetKeyDown(KeyCode.Mouse0))
                 {
                     isClicked = true;
-                    lockAngle = ctrl.CameraAngle;
+                    lockAngle = cameraCtrl.CameraAngle;
 
-                    Vector3 centerPos = center.position;
+                    Vector3 centerPos = transform.position;
                     Vector3 mousePos = Input.mousePosition;
 
                     screenPoint = mainCamera.WorldToScreenPoint(centerPos);
@@ -156,12 +136,25 @@ namespace AI_BetterHScenes
             }
             else
             {
-                mat.color = idleColor;
+                for (int i = 0; i < 4; i++)
+                {
+                    if (i == selectedIndex && isClicked)
+                        continue;
+                    
+                    materials[i].color = Tools.DraggerData.colors[i];
+                }
+
                 return;
             }
 
             if(isClicked)
                 StartCoroutine(LockCamera());
+        }
+        
+        private void OnDisable()
+        {
+            isClicked = false;
+            isSelected = false;
         }
     }
 }
