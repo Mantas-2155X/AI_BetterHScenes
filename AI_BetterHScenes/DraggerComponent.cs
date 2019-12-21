@@ -21,13 +21,14 @@ namespace AI_BetterHScenes
         private Vector3 screenPoint;
         
         private Transform toMove;
-        
-        private readonly RaycastHit[] hits = new RaycastHit[15];
 
         private readonly Color[] selectedColors = new Color[4];
         private readonly Material[] materials = new Material[4];
         private readonly Transform[] axisTransforms = new Transform[4];
         private readonly BoxCollider[] boxColliders = new BoxCollider[4];
+
+        private static Ray ray;
+        private static readonly RaycastHit[] hits = new RaycastHit[15];
 
         public void SetData(VirtualCameraController hCamera)
         {
@@ -87,7 +88,7 @@ namespace AI_BetterHScenes
 
             if (!isClicked)
             {
-                Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
+                ray = mainCamera.ScreenPointToRay(Input.mousePosition);
                 int hitCount = Physics.RaycastNonAlloc(ray, hits, 250, 1 << 10);
                 
                 for (int i = 0; i < hitCount; i++)
