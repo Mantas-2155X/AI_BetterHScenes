@@ -16,7 +16,15 @@ namespace AI_BetterHScenes
         
         public static int ChangeSiruIndex()
         {
+            if (AI_BetterHScenes.manager != null && AI_BetterHScenes.manager.bMerchant && AI_BetterHScenes.cleanMerchantCumAfterH.Value)
+                return 0;
+            
             return AI_BetterHScenes.retainCumAfterH.Value ? 5 : 0;
+        }
+        
+        public static bool ChangeUIEnableIndex()
+        {
+            return AI_BetterHScenes.keepButtonsInteractive.Value;
         }
         
         public static void CleanUpSiru(AgentStateAction __instance)
@@ -62,18 +70,18 @@ namespace AI_BetterHScenes
                 centerTransform.localPosition = new Vector3(0f, 0f, 0f);
                 centerTransform.eulerAngles = Vector3.zero;
 
-                var centerCopy = GameObject.Instantiate(cObj);
+                var centerCopy = Object.Instantiate(cObj);
                 if (centerCopy == null) 
                     continue;
                 
                 for (int i = 0; i < 3; i++)
                 {
-                    var copy = GameObject.Instantiate(centerCopy, centerTransform);
+                    var copy = Object.Instantiate(centerCopy, centerTransform);
                     copy.AddComponent<DraggerComponent>().SetData(chara.transform, centerTransform, i, AI_BetterHScenes.hCamera);
                 }
                 cObj.SetActive(false);
 
-                GameObject.Destroy(centerCopy);
+                Object.Destroy(centerCopy);
             }
         }
         
@@ -95,7 +103,7 @@ namespace AI_BetterHScenes
                 if (dragger == null || dragger.gameObject == null)
                     continue;
                 
-                GameObject.Destroy(dragger.gameObject);
+                Object.Destroy(dragger.gameObject);
             }
         }
 

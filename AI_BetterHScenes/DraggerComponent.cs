@@ -111,13 +111,19 @@ namespace AI_BetterHScenes
 
             isHover = false;
 
-            Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
-            int hitCount = Physics.RaycastNonAlloc(ray, hits, 250, 1 << 10);
-            
-            for (int i = 0; i < hitCount; i++)
-                if (hits[i].collider == selfCollider)
-                    isHover = true;
-            
+            if (!isClicked)
+            {
+                Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
+                int hitCount = Physics.RaycastNonAlloc(ray, hits, 250, 1 << 10);
+
+                for (int i = 0; i < hitCount; i++)
+                    if (hits[i].collider == selfCollider)
+                    {
+                        isHover = true;
+                        break;
+                    }
+            }
+
             if (isClicked && Input.GetKeyUp(KeyCode.Mouse0))
                 isClicked = false;
 

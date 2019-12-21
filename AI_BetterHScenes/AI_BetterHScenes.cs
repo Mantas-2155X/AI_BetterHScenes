@@ -50,9 +50,11 @@ namespace AI_BetterHScenes
         private static ConfigEntry<KeyboardShortcut> showFemaleDraggers { get; set; }
         
         private static ConfigEntry<bool> positionDraggers { get; set; }
+        public static ConfigEntry<bool> cleanMerchantCumAfterH { get; private set; }
         public static ConfigEntry<bool> retainCumAfterH { get; private set; }
-        private static ConfigEntry<bool> keepButtonsInteractive { get; set; }
+        public static ConfigEntry<bool> keepButtonsInteractive { get; set; }
         private static ConfigEntry<int> hPointSearchRange { get; set; }
+        private static ConfigEntry<bool> forceCloseEyesOnWeakness { get; set; }
         private static ConfigEntry<bool> forceTearsOnWeakness { get; set; }
         private static ConfigEntry<bool> stripMalePantsStartH { get; set; }
         private static ConfigEntry<bool> stripMalePantsChangeAnim { get; set; }
@@ -72,10 +74,12 @@ namespace AI_BetterHScenes
             showMaleDraggers = Config.Bind("QoL", "Show male draggers", new KeyboardShortcut(KeyCode.N));
             showFemaleDraggers = Config.Bind("QoL", "Show female draggers", new KeyboardShortcut(KeyCode.M));
             
-            retainCumAfterH = Config.Bind("QoL", "Keep cum on body after H", false, new ConfigDescription("Keep cum on body after H, will clean up if taking a bath or changing clothes"));
+            cleanMerchantCumAfterH = Config.Bind("QoL", "Clean merchant cum on body after H", false, new ConfigDescription("Clean merchant cum on body after H. Only effective if 'keep cum on body after H' is enabled"));
+            retainCumAfterH = Config.Bind("QoL", "Keep cum on body after H", false, new ConfigDescription("Keep cum on body after H, will clean up if taking a bath or changing clothes (if not merchant)"));
             keepButtonsInteractive = Config.Bind("QoL", "Keep UI buttons interactive", true, new ConfigDescription("Keep buttons interactive during certain events like orgasm"));
             hPointSearchRange = Config.Bind("QoL", "H point search range", 60, new ConfigDescription("Range in which H points are shown when changing location", new AcceptableValueRange<int>(1, 1000)));
             forceTearsOnWeakness = Config.Bind("QoL", "Tears when weakness is reached", true, new ConfigDescription("Make girl cry when weakness is reached during H"));
+            forceCloseEyesOnWeakness = Config.Bind("QoL", "Close eyes when weakness is reached", true, new ConfigDescription("Close girl eyes when weakness is reached during H"));
             stripMalePantsStartH = Config.Bind("QoL", "Strip male pants on H start", true, new ConfigDescription("Strip male/futa pants when starting H"));
             stripMalePantsChangeAnim = Config.Bind("QoL", "Strip male pants on anim change & start", false, new ConfigDescription("Strip male/futa pants when changing H animation & starting H"));
             unlockCamera = Config.Bind("QoL", "Unlock camera movement", true, new ConfigDescription("Unlock camera zoom out / distance limit during H"));
@@ -154,30 +158,35 @@ namespace AI_BetterHScenes
         //-- Toggle chara position draggers --//
         private void Update()
         {
-            if (!positionDraggers.Value || !inHScene || Camera.main == null || characters == null || characters.Count == 0)
+            if (!positionDraggers.Value || !inHScene || characters == null || characters.Count == 0)
                 return;
             
-            bool maleShow = UnityEngine.Input.GetKey(showMaleDraggers.Value.MainKey);
-            bool femaleShow = UnityEngine.Input.GetKey(showFemaleDraggers.Value.MainKey);
-
             foreach (var chara in characters.Where(chara => chara != null && chara.transform != null))
             {
                 Transform dragger = chara.transform.Find("DraggerCenter");
                 if (dragger == null)
                     continue;
                 
-                dragger.gameObject.SetActiveIfDifferent(maleShow && chara.sex == 0 || femaleShow && chara.sex == 1);
+                dragger.gameObject.SetActiveIfDifferent(UnityEngine.Input.GetKey(showMaleDraggers.Value.MainKey) && chara.sex == 0 || UnityEngine.Input.GetKey(showFemaleDraggers.Value.MainKey) && chara.sex == 1);
             }
         }
         
         //-- Make girl cry if weakness is reached --//
+        //-- Close girl eyes if weakness is reached --//
         [HarmonyPrefix, HarmonyPatch(typeof(HVoiceCtrl), "SetFace")]
         public static void HVoiceCtrl_SetFace_ForceTearsOnWeakness(HVoiceCtrl __instance, ref HVoiceCtrl.FaceInfo _face)
         {
-            if (!inHScene || !forceTearsOnWeakness.Value || !__instance.ctrlFlag.isFaintness)
+            if (!inHScene || !__instance.ctrlFlag.isFaintness || _face == null)
                 return;
 
-            _face.tear = 1f;
+            if(forceTearsOnWeakness.Value) 
+                _face.tear = 1f;
+
+            if (forceCloseEyesOnWeakness.Value)
+            {
+                _face.openEye = 0.05f;
+                _face.blink = false;
+            }
         }
         
         //-- Keep buttons interactive during certain events like orgasm --//
@@ -231,20 +240,18 @@ namespace AI_BetterHScenes
         public static void HScene_EndProc_Patch()
         {
             inHScene = false;
+
+            if (map != null && mapShouldEnable)
+            {
+                map.SetActive(true);
+                mapShouldEnable = false;
+            }
             
-            if(map != null)
-                if (mapShouldEnable)
-                {
-                    map.SetActive(true);
-                    mapShouldEnable = false;
-                }
-            
-            if(mapSimulation != null)
-                if (mapSimulationShouldEnable)
-                {
-                    mapSimulation.SetActive(true);
-                    mapSimulationShouldEnable = false;
-                }
+            if (mapSimulation != null && mapSimulationShouldEnable)
+            {
+                mapSimulation.SetActive(true);
+                mapSimulationShouldEnable = false;
+            }
 
             Tools.DestroyDraggers();
         }
@@ -287,6 +294,9 @@ namespace AI_BetterHScenes
             if (chara == null || shouldCleanUp.Contains(chara))
                 return;
 
+            if (manager != null && (manager.bMerchant || manager.Player.ChaControl == chara))
+                return;
+            
             AgentActor agent = Singleton<Manager.Map>.Instance.AgentTable.Values.FirstOrDefault(actor => actor != null && actor.ChaControl == chara);
             if (agent == null)
                 return;
