@@ -1,6 +1,8 @@
 # AI_BetterHScenes
 This plugin fixes HScene performance bugs and adds extra features  
 
+# DO NOT REUPLOAD WITHOUT PERMISSION | 未经许可请勿上传
+
 **Current Features:**  
 * Disable map during H (~10-15 FPS boost)  
 * Disable map simulation during H (~8-13 FPS boost)  
@@ -11,6 +13,10 @@ This plugin fixes HScene performance bugs and adds extra features
 * Strip male/futa pants on H anim change (1)  
 * Change H Point search range  
 * Keep H buttons interactive during orgasm  
+* Retain cum after H (can be cleaned by bathing / changing clothes)
+* Character position draggers
+* Close eyes when reached weakness during H
+* Clean or keep cum on Merchant after H (if retain is enabled)
 
 **Download:**  
 * Download the latest `AI_BetterHScenes.zip` from https://github.com/Mantas-2155X/AI_BetterHScenes/releases  
