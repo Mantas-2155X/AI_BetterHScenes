@@ -1,7 +1,7 @@
 # AI_BetterHScenes
 This plugin fixes HScene performance bugs and adds extra features  
 
-# DO NOT REUPLOAD WITHOUT PERMISSION | 未经许可请勿上传
+# DO NOT REUPLOAD WITHOUT PERMISSION | 未经许可请勿转载
 
 **Current Features:**  
 * Disable map during H (~10-15 FPS boost)  
