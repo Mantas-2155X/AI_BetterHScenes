@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Linq;
 using UnityEngine;
 using AIProject;
@@ -9,15 +8,13 @@ namespace AI_BetterHScenes
     public class DraggerComponent : MonoBehaviour
     {
         private Camera mainCamera;
-        private VirtualCameraController cameraCtrl;
         
         private bool isSelected;
-        private bool isClicked;
+        public bool isClicked;
 
         private Transform selectedAxis;
         
         private Vector3 offset;
-        private Vector3 lockAngle;
         private Vector3 screenPoint;
         
         private Transform toMove;
@@ -27,13 +24,9 @@ namespace AI_BetterHScenes
         private readonly Transform[] axisTransforms = new Transform[4];
         private readonly BoxCollider[] boxColliders = new BoxCollider[4];
 
-        private static Ray ray;
-        private static readonly RaycastHit[] hits = new RaycastHit[15];
-
         public void SetData(VirtualCameraController hCamera)
         {
             mainCamera = Camera.main;
-            cameraCtrl = hCamera;
             toMove = transform.parent;
             
             for (int i = 0; i < 4; i++)
@@ -53,31 +46,10 @@ namespace AI_BetterHScenes
                 selectedColors[i] = new Color(materials[i].color.r * 2, materials[i].color.g * 2, materials[i].color.b * 2, 0.75f);
             }
         }
-        
-        private IEnumerator LockCamera()
-        {
-            cameraCtrl.CameraAngle = lockAngle;
-            
-            cameraCtrl.NoCtrlCondition = () => isClicked;
-            yield return new WaitUntil(() => !isClicked);
-            cameraCtrl.NoCtrlCondition = () => !isClicked;
-        }
-        
-        private void Update()
-        {
-            if (cameraCtrl == null || !gameObject.activeSelf)
-            {
-                OnDisable();
-                return;
-            }
-            
-            if(isClicked)
-                StartCoroutine(LockCamera());
-        }
 
         private void LateUpdate()
         {
-            if (cameraCtrl == null || !gameObject.activeSelf)
+            if (!gameObject.activeSelf)
             {
                 OnDisable();
                 return;
@@ -88,14 +60,13 @@ namespace AI_BetterHScenes
 
             if (!isClicked)
             {
-                ray = mainCamera.ScreenPointToRay(Input.mousePosition);
-                int hitCount = Physics.RaycastNonAlloc(ray, hits, 250, 1 << 10);
+                int hitCount = Physics.RaycastNonAlloc(mainCamera.ScreenPointToRay(Input.mousePosition), AI_BetterHScenes.hits, 250, 1 << 10);
                 
                 for (int i = 0; i < hitCount; i++)
-                    if (boxColliders.Contains(hits[i].collider))
+                    if (boxColliders.Contains(AI_BetterHScenes.hits[i].collider))
                     {
                         isSelected = true;
-                        selectedAxis = hits[i].collider.transform;
+                        selectedAxis = AI_BetterHScenes.hits[i].collider.transform;
                         
                         break;
                     }
@@ -103,7 +74,7 @@ namespace AI_BetterHScenes
 
             if (isClicked && Input.GetKeyUp(KeyCode.Mouse0))
                 isClicked = false;
-
+            
             if (isClicked && !Input.GetKeyDown(KeyCode.Mouse0) && Input.GetKey(KeyCode.Mouse0))
             {
                 Vector3 toMovePos = toMove.position;
@@ -126,7 +97,6 @@ namespace AI_BetterHScenes
                 if (Input.GetKeyDown(KeyCode.Mouse0))
                 {
                     isClicked = true;
-                    lockAngle = cameraCtrl.CameraAngle;
 
                     Vector3 centerPos = transform.position;
                     Vector3 mousePos = Input.mousePosition;
@@ -144,12 +114,7 @@ namespace AI_BetterHScenes
                     
                     materials[i].color = Tools.DraggerData.colors[i];
                 }
-
-                return;
             }
-
-            if(isClicked)
-                StartCoroutine(LockCamera());
         }
         
         private void OnDisable()

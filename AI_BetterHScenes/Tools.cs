@@ -109,6 +109,8 @@ namespace AI_BetterHScenes
                 
                 cObj.AddComponent<DraggerComponent>().SetData(AI_BetterHScenes.hCamera);
                 cObj.SetActive(false);
+                
+                AI_BetterHScenes.draggers.Add(cObj.GetComponent<DraggerComponent>());
             }
         }
         
@@ -117,16 +119,8 @@ namespace AI_BetterHScenes
             if (AI_BetterHScenes.characters == null || AI_BetterHScenes.characters.Count == 0)
                 return;
 
-            foreach (var chara in AI_BetterHScenes.characters)
+            foreach (var dragger in AI_BetterHScenes.draggers)
             {
-                if (chara == null)
-                    continue;
-                
-                var tr = chara.transform;
-                if(tr == null)
-                    continue;
-
-                Transform dragger = tr.Find("XYZ");
                 if (dragger == null || dragger.gameObject == null)
                     continue;
                 
@@ -154,6 +148,9 @@ namespace AI_BetterHScenes
             AI_BetterHScenes.characters = new List<ChaControl>();
             AI_BetterHScenes.characters.AddRange(__instance.GetFemales());
             AI_BetterHScenes.characters.AddRange(__instance.GetMales());
+            
+            AI_BetterHScenes.draggers = new List<DraggerComponent>();
+            AI_BetterHScenes.cameraShouldLock = true;
         }
     }
 }

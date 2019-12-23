@@ -23,7 +23,7 @@ namespace AI_BetterHScenes
     [BepInPlugin(nameof(AI_BetterHScenes), nameof(AI_BetterHScenes), VERSION)][BepInProcess("AI-Syoujyo")]
     public class AI_BetterHScenes : BaseUnityPlugin
     {
-        public const string VERSION = "2.0.0";
+        public const string VERSION = "2.0.1";
 
         public new static ManualLogSource Logger;
 
@@ -33,9 +33,12 @@ namespace AI_BetterHScenes
         public static HSceneManager manager;
         public static HSceneFlagCtrl hFlagCtrl;
         public static HSceneSprite hSprite;
-
+        
         public static VirtualCameraController hCamera;
 
+        public static readonly RaycastHit[] hits = new RaycastHit[15];
+        
+        public static List<DraggerComponent> draggers;
         public static List<ChaControl> characters;
         public static List<ChaControl> shouldCleanUp;
 
@@ -43,6 +46,7 @@ namespace AI_BetterHScenes
         public static GameObject mapSimulation;
         public static List<SkinnedCollisionHelper> collisionHelpers;
 
+        public static bool cameraShouldLock; // compatibility with other plugins which might disable the camera control
         private static bool mapShouldEnable; // compatibility with other plugins which might disable the map
         private static bool mapSimulationShouldEnable; // compatibility with other plugins which might disable the map simulation
         
@@ -52,7 +56,7 @@ namespace AI_BetterHScenes
         private static ConfigEntry<bool> positionDraggers { get; set; }
         public static ConfigEntry<bool> cleanMerchantCumAfterH { get; private set; }
         public static ConfigEntry<bool> retainCumAfterH { get; private set; }
-        public static ConfigEntry<bool> keepButtonsInteractive { get; set; }
+        public static ConfigEntry<bool> keepButtonsInteractive { get; private set; }
         private static ConfigEntry<int> hPointSearchRange { get; set; }
         private static ConfigEntry<bool> forceCloseEyesOnWeakness { get; set; }
         private static ConfigEntry<bool> forceTearsOnWeakness { get; set; }
@@ -160,7 +164,7 @@ namespace AI_BetterHScenes
         {
             if (!positionDraggers.Value || !inHScene || characters == null || characters.Count == 0)
                 return;
-            
+
             foreach (var chara in characters.Where(chara => chara != null && chara.transform != null))
             {
                 Transform dragger = chara.transform.Find("XYZ");
@@ -170,7 +174,24 @@ namespace AI_BetterHScenes
                 dragger.gameObject.SetActiveIfDifferent(UnityEngine.Input.GetKey(showMaleDraggers.Value.MainKey) && chara.sex == 0 || UnityEngine.Input.GetKey(showFemaleDraggers.Value.MainKey) && chara.sex == 1);
             }
         }
-        
+
+        //-- Disable camera control --//
+        [HarmonyPrefix, HarmonyPatch(typeof(VirtualCameraController), "LateUpdate")]
+        public static bool VirtualCameraController_LateUpdate_Patch(VirtualCameraController __instance)
+        {
+            if (!cameraShouldLock || !inHScene || !positionDraggers.Value || draggers == null || draggers.Count == 0 || hCamera == null)
+                return true;
+
+            foreach (var comp in draggers)
+                if (comp.isClicked)
+                {
+                    Traverse.Create(__instance).Property("isControlNow").SetValue(false);
+                    return false;
+                }
+            
+            return true;
+        }
+
         //-- Make girl cry if weakness is reached --//
         //-- Close girl eyes if weakness is reached --//
         [HarmonyPrefix, HarmonyPatch(typeof(HVoiceCtrl), "SetFace")]
