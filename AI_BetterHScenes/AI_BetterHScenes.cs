@@ -53,6 +53,7 @@ namespace AI_BetterHScenes
         private static ConfigEntry<KeyboardShortcut> showMaleDraggers { get; set; }
         private static ConfigEntry<KeyboardShortcut> showFemaleDraggers { get; set; }
         
+        private static ConfigEntry<bool> alwaysGaugesHeart { get; set; }
         private static ConfigEntry<bool> positionDraggers { get; set; }
         public static ConfigEntry<bool> cleanMerchantCumAfterH { get; private set; }
         public static ConfigEntry<bool> retainCumAfterH { get; private set; }
@@ -78,6 +79,7 @@ namespace AI_BetterHScenes
             showMaleDraggers = Config.Bind("QoL", "Show male draggers", new KeyboardShortcut(KeyCode.N));
             showFemaleDraggers = Config.Bind("QoL", "Show female draggers", new KeyboardShortcut(KeyCode.M));
             
+            alwaysGaugesHeart = Config.Bind("QoL", "Always hit gauge heart", false, new ConfigDescription("Always hit gauge heart. Will cause girl progress to increase without having to scroll specific amount"));
             cleanMerchantCumAfterH = Config.Bind("QoL", "Clean merchant cum on body after H", false, new ConfigDescription("Clean merchant cum on body after H. Only effective if 'keep cum on body after H' is enabled"));
             retainCumAfterH = Config.Bind("QoL", "Keep cum on body after H", false, new ConfigDescription("Keep cum on body after H, will clean up if taking a bath or changing clothes (if not merchant)"));
             keepButtonsInteractive = Config.Bind("QoL", "Keep UI buttons interactive", false, new ConfigDescription("Keep buttons interactive during certain events like orgasm"));
@@ -159,6 +161,14 @@ namespace AI_BetterHScenes
             HarmonyWrapper.PatchAll(typeof(AI_BetterHScenes));
         }
 
+        //-- Always gauges heart --//
+        [HarmonyPostfix, HarmonyPatch(typeof(FeelHit), "isHit")]
+        public static void FeelHit_isHit_AlwaysGaugesHeart(ref bool __result)
+        {
+            if(inHScene && alwaysGaugesHeart.Value)
+                __result = true;
+        }
+        
         //-- Toggle chara position draggers --//
         private void Update()
         {
@@ -184,7 +194,6 @@ namespace AI_BetterHScenes
             
             Traverse.Create(__instance).Property("isControlNow").SetValue(false);
             return false;
-
         }
 
         //-- Make girl cry if weakness is reached --//
