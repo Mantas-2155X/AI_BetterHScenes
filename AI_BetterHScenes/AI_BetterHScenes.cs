@@ -80,7 +80,7 @@ namespace AI_BetterHScenes
             
             cleanMerchantCumAfterH = Config.Bind("QoL", "Clean merchant cum on body after H", false, new ConfigDescription("Clean merchant cum on body after H. Only effective if 'keep cum on body after H' is enabled"));
             retainCumAfterH = Config.Bind("QoL", "Keep cum on body after H", false, new ConfigDescription("Keep cum on body after H, will clean up if taking a bath or changing clothes (if not merchant)"));
-            keepButtonsInteractive = Config.Bind("QoL", "Keep UI buttons interactive", true, new ConfigDescription("Keep buttons interactive during certain events like orgasm"));
+            keepButtonsInteractive = Config.Bind("QoL", "Keep UI buttons interactive", false, new ConfigDescription("Keep buttons interactive during certain events like orgasm"));
             hPointSearchRange = Config.Bind("QoL", "H point search range", 60, new ConfigDescription("Range in which H points are shown when changing location (default 60)", new AcceptableValueRange<int>(1, 1000)));
             forceTearsOnWeakness = Config.Bind("QoL", "Tears when weakness is reached", true, new ConfigDescription("Make girl cry when weakness is reached during H"));
             forceCloseEyesOnWeakness = Config.Bind("QoL", "Close eyes when weakness is reached", false, new ConfigDescription("Close girl eyes when weakness is reached during H"));
@@ -162,34 +162,29 @@ namespace AI_BetterHScenes
         //-- Toggle chara position draggers --//
         private void Update()
         {
-            if (!positionDraggers.Value || !inHScene || characters == null || characters.Count == 0)
+            if (!positionDraggers.Value || !inHScene || draggers == null || draggers.Count == 0)
                 return;
 
-            foreach (var chara in characters.Where(chara => chara != null && chara.transform != null))
+            foreach (var dragger in draggers.Where(dragger => dragger != null && dragger.gameObject != null))
             {
-                Transform dragger = chara.transform.Find("XYZ");
-                if (dragger == null)
-                    continue;
-                
+                ChaControl chara = dragger.transform.parent.gameObject.GetComponent<ChaControl>();
                 dragger.gameObject.SetActiveIfDifferent(UnityEngine.Input.GetKey(showMaleDraggers.Value.MainKey) && chara.sex == 0 || UnityEngine.Input.GetKey(showFemaleDraggers.Value.MainKey) && chara.sex == 1);
             }
         }
 
-        //-- Disable camera control --//
+        //-- Disable camera control when chara position dragging --//
         [HarmonyPrefix, HarmonyPatch(typeof(VirtualCameraController), "LateUpdate")]
         public static bool VirtualCameraController_LateUpdate_Patch(VirtualCameraController __instance)
         {
             if (!cameraShouldLock || !inHScene || !positionDraggers.Value || draggers == null || draggers.Count == 0 || hCamera == null)
                 return true;
 
-            foreach (var comp in draggers)
-                if (comp.isClicked)
-                {
-                    Traverse.Create(__instance).Property("isControlNow").SetValue(false);
-                    return false;
-                }
+            if (!draggers.Any(comp => comp != null && comp.isClicked)) 
+                return true;
             
-            return true;
+            Traverse.Create(__instance).Property("isControlNow").SetValue(false);
+            return false;
+
         }
 
         //-- Make girl cry if weakness is reached --//
@@ -203,11 +198,11 @@ namespace AI_BetterHScenes
             if(forceTearsOnWeakness.Value) 
                 _face.tear = 1f;
 
-            if (forceCloseEyesOnWeakness.Value)
-            {
-                _face.openEye = 0.05f;
-                _face.blink = false;
-            }
+            if (!forceCloseEyesOnWeakness.Value) 
+                return;
+            
+            _face.openEye = 0.05f;
+            _face.blink = false;
         }
         
         //-- Keep buttons interactive during certain events like orgasm --//

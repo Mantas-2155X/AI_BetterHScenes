@@ -1,9 +1,12 @@
 using System.Collections.Generic;
-using UnityEngine;
-using AIProject;
-using AIChara;
+
 using HarmonyLib;
+
+using AIChara;
+using AIProject;
 using Manager;
+
+using UnityEngine;
 
 namespace AI_BetterHScenes
 {

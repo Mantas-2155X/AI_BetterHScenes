@@ -1,7 +1,9 @@
 using System;
 using System.Linq;
-using UnityEngine;
+
 using AIProject;
+
+using UnityEngine;
 
 namespace AI_BetterHScenes
 {
@@ -94,16 +96,19 @@ namespace AI_BetterHScenes
 
             if (isSelected)
             {
-                if (Input.GetKeyDown(KeyCode.Mouse0))
-                {
-                    isClicked = true;
+                if (!Input.GetKeyDown(KeyCode.Mouse0)) 
+                    return;
 
-                    Vector3 centerPos = transform.position;
-                    Vector3 mousePos = Input.mousePosition;
+                if (AI_BetterHScenes.draggers.Any(dragger => dragger != null && dragger.isClicked))
+                    return;
 
-                    screenPoint = mainCamera.WorldToScreenPoint(centerPos);
-                    offset = centerPos - mainCamera.ScreenToWorldPoint(new Vector3(mousePos.x, mousePos.y, screenPoint.z));
-                }
+                isClicked = true;
+
+                Vector3 centerPos = transform.position;
+                Vector3 mousePos = Input.mousePosition;
+
+                screenPoint = mainCamera.WorldToScreenPoint(centerPos);
+                offset = centerPos - mainCamera.ScreenToWorldPoint(new Vector3(mousePos.x, mousePos.y, screenPoint.z));
             }
             else
             {
