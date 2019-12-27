@@ -23,7 +23,7 @@ namespace AI_BetterHScenes
     [BepInPlugin(nameof(AI_BetterHScenes), nameof(AI_BetterHScenes), VERSION)][BepInProcess("AI-Syoujyo")]
     public class AI_BetterHScenes : BaseUnityPlugin
     {
-        public const string VERSION = "2.0.1";
+        public const string VERSION = "2.1.0";
 
         public new static ManualLogSource Logger;
 
@@ -50,21 +50,30 @@ namespace AI_BetterHScenes
         private static bool mapShouldEnable; // compatibility with other plugins which might disable the map
         private static bool mapSimulationShouldEnable; // compatibility with other plugins which might disable the map simulation
         
+        //-- Draggers --//
+        private static ConfigEntry<bool> enablePositionDraggers { get; set; }
         private static ConfigEntry<KeyboardShortcut> showMaleDraggers { get; set; }
         private static ConfigEntry<KeyboardShortcut> showFemaleDraggers { get; set; }
         
-        private static ConfigEntry<bool> alwaysGaugesHeart { get; set; }
-        private static ConfigEntry<bool> positionDraggers { get; set; }
-        public static ConfigEntry<bool> cleanMerchantCumAfterH { get; private set; }
-        public static ConfigEntry<bool> retainCumAfterH { get; private set; }
+        //-- Clothes --//
+        private static ConfigEntry<Tools.StripMalePants> stripMalePants { get; set; }
+        
+        //-- Weakness --//
+        private static ConfigEntry<bool> forceTearsOnWeakness { get; set; }
+        private static ConfigEntry<bool> forceCloseEyesOnWeakness { get; set; }
+        
+        //-- Cum --//
+        private static ConfigEntry<bool> autoFinish { get; set; }
+        public static ConfigEntry<Tools.CleanCum> cleanCumAfterH { get; private set; }
+        private static ConfigEntry<bool> increaseBathDesire { get; set; }
+        
+        //-- General --//
+        private static ConfigEntry<Tools.AlwaysHeartGauges> alwaysGaugesHeart { get; set; }
         public static ConfigEntry<bool> keepButtonsInteractive { get; private set; }
         private static ConfigEntry<int> hPointSearchRange { get; set; }
-        private static ConfigEntry<bool> forceCloseEyesOnWeakness { get; set; }
-        private static ConfigEntry<bool> forceTearsOnWeakness { get; set; }
-        private static ConfigEntry<bool> stripMalePantsStartH { get; set; }
-        private static ConfigEntry<bool> stripMalePantsChangeAnim { get; set; }
         private static ConfigEntry<bool> unlockCamera { get; set; }
         
+        //-- Performance --//
         private static ConfigEntry<bool> disableMap { get; set; }
         private static ConfigEntry<bool> disableMapSimulation { get; set; }
         private static ConfigEntry<bool> optimizeCollisionHelpers { get; set; }
@@ -74,24 +83,27 @@ namespace AI_BetterHScenes
             Logger = base.Logger;
 
             shouldCleanUp = new List<ChaControl>();
+
+            enablePositionDraggers = Config.Bind("QoL > Draggers", "Enable character draggers", false, new ConfigDescription("Enable character position draggers, shown by keys"));
+            showMaleDraggers = Config.Bind("QoL > Draggers", "Show male draggers", new KeyboardShortcut(KeyCode.N));
+            showFemaleDraggers = Config.Bind("QoL > Draggers", "Show female draggers", new KeyboardShortcut(KeyCode.M));
             
-            positionDraggers = Config.Bind("QoL", "Enable character draggers", false, new ConfigDescription("Enable character position draggers, shown by keys"));
-            showMaleDraggers = Config.Bind("QoL", "Show male draggers", new KeyboardShortcut(KeyCode.N));
-            showFemaleDraggers = Config.Bind("QoL", "Show female draggers", new KeyboardShortcut(KeyCode.M));
+            stripMalePants = Config.Bind("QoL > Clothes", "Strip male pants", Tools.StripMalePants.OnHStart, new ConfigDescription("Strip male pants during H"));
             
-            alwaysGaugesHeart = Config.Bind("QoL", "Always hit gauge heart", false, new ConfigDescription("Always hit gauge heart. Will cause girl progress to increase without having to scroll specific amount"));
-            cleanMerchantCumAfterH = Config.Bind("QoL", "Clean merchant cum on body after H", false, new ConfigDescription("Clean merchant cum on body after H. Only effective if 'keep cum on body after H' is enabled"));
-            retainCumAfterH = Config.Bind("QoL", "Keep cum on body after H", false, new ConfigDescription("Keep cum on body after H, will clean up if taking a bath or changing clothes (if not merchant)"));
-            keepButtonsInteractive = Config.Bind("QoL", "Keep UI buttons interactive", false, new ConfigDescription("Keep buttons interactive during certain events like orgasm"));
-            hPointSearchRange = Config.Bind("QoL", "H point search range", 60, new ConfigDescription("Range in which H points are shown when changing location (default 60)", new AcceptableValueRange<int>(1, 1000)));
-            forceTearsOnWeakness = Config.Bind("QoL", "Tears when weakness is reached", true, new ConfigDescription("Make girl cry when weakness is reached during H"));
-            forceCloseEyesOnWeakness = Config.Bind("QoL", "Close eyes when weakness is reached", false, new ConfigDescription("Close girl eyes when weakness is reached during H"));
-            stripMalePantsStartH = Config.Bind("QoL", "Strip male pants on H start", true, new ConfigDescription("Strip male/futa pants when starting H"));
-            stripMalePantsChangeAnim = Config.Bind("QoL", "Strip male pants on anim change & start", false, new ConfigDescription("Strip male/futa pants when changing H animation & starting H"));
-            unlockCamera = Config.Bind("QoL", "Unlock camera movement", true, new ConfigDescription("Unlock camera zoom out / distance limit during H"));
+            forceTearsOnWeakness = Config.Bind("QoL > Weakness", "Tears when weakness is reached", true, new ConfigDescription("Make girl cry when weakness is reached during H"));
+            forceCloseEyesOnWeakness = Config.Bind("QoL > Weakness", "Close eyes when weakness is reached", false, new ConfigDescription("Close girl eyes when weakness is reached during H"));
+
+            autoFinish = Config.Bind("QoL > Cum", "Auto finish", false, new ConfigDescription("Automatically finish inside when both gauges reach max"));
+            cleanCumAfterH = Config.Bind("QoL > Cum", "Clean cum on body after H", Tools.CleanCum.All, new ConfigDescription("Clean cum on body after H"));
+            increaseBathDesire = Config.Bind("QoL > Cum", "Increase bath desire after H", false, new ConfigDescription("Increase bath desire after H (agents only)"));
+
+            alwaysGaugesHeart = Config.Bind("QoL > General", "Always hit gauge heart", Tools.AlwaysHeartGauges.WeaknessOnly, new ConfigDescription("Always hit gauge heart. Will cause progress to increase without having to scroll specific amount"));
+            keepButtonsInteractive = Config.Bind("QoL > General", "Keep UI buttons interactive*", false, new ConfigDescription("Keep buttons interactive during certain events like orgasm (WARNING: May cause bugs)"));
+            hPointSearchRange = Config.Bind("QoL > General", "H point search range", 300, new ConfigDescription("Range in which H points are shown when changing location (default 60)", new AcceptableValueRange<int>(1, 999)));
+            unlockCamera = Config.Bind("QoL > General", "Unlock camera movement", true, new ConfigDescription("Unlock camera zoom out / distance limit during H"));
             
             disableMap = Config.Bind("Performance Improvements", "Disable map", false, new ConfigDescription("Disable map during H scene"));
-            disableMapSimulation = Config.Bind("Performance Improvements", "Disable map simulation", false, new ConfigDescription("Disable map simulation during H scene (WARNING: May cause some effects to disappear)"));
+            disableMapSimulation = Config.Bind("Performance Improvements", "Disable map simulation*", false, new ConfigDescription("Disable map simulation during H scene (WARNING: May cause some effects to disappear)"));
             optimizeCollisionHelpers = Config.Bind("Performance Improvements", "Optimize collisionhelpers", true, new ConfigDescription("Optimize collisionhelpers by letting them update once per frame"));
 
             hPointSearchRange.SettingChanged += delegate
@@ -161,18 +173,17 @@ namespace AI_BetterHScenes
             HarmonyWrapper.PatchAll(typeof(AI_BetterHScenes));
         }
 
-        //-- Always gauges heart --//
-        [HarmonyPostfix, HarmonyPatch(typeof(FeelHit), "isHit")]
-        public static void FeelHit_isHit_AlwaysGaugesHeart(ref bool __result)
-        {
-            if(inHScene && alwaysGaugesHeart.Value)
-                __result = true;
-        }
-        
+        //-- Auto finish --//
         //-- Toggle chara position draggers --//
         private void Update()
         {
-            if (!positionDraggers.Value || !inHScene || draggers == null || draggers.Count == 0)
+            if (!inHScene)
+                return;
+
+            if (autoFinish.Value && hFlagCtrl != null && hFlagCtrl.feel_f >= 0.96f && hFlagCtrl.feel_m >= 0.96f)
+                hFlagCtrl.click = HSceneFlagCtrl.ClickKind.FinishSame;
+
+            if (!enablePositionDraggers.Value || draggers == null || draggers.Count == 0)
                 return;
 
             foreach (var dragger in draggers.Where(dragger => dragger != null && dragger.gameObject != null))
@@ -181,12 +192,20 @@ namespace AI_BetterHScenes
                 dragger.gameObject.SetActiveIfDifferent(UnityEngine.Input.GetKey(showMaleDraggers.Value.MainKey) && chara.sex == 0 || UnityEngine.Input.GetKey(showFemaleDraggers.Value.MainKey) && chara.sex == 1);
             }
         }
+        
+        //-- Always gauges heart --//
+        [HarmonyPostfix, HarmonyPatch(typeof(FeelHit), "isHit")]
+        public static void FeelHit_isHit_AlwaysGaugesHeart(ref bool __result)
+        {
+            if(inHScene && alwaysGaugesHeart.Value == Tools.AlwaysHeartGauges.Always || alwaysGaugesHeart.Value == Tools.AlwaysHeartGauges.WeaknessOnly && hFlagCtrl != null && hFlagCtrl.isFaintness)
+                __result = true;
+        }
 
         //-- Disable camera control when chara position dragging --//
         [HarmonyPrefix, HarmonyPatch(typeof(VirtualCameraController), "LateUpdate")]
         public static bool VirtualCameraController_LateUpdate_Patch(VirtualCameraController __instance)
         {
-            if (!cameraShouldLock || !inHScene || !positionDraggers.Value || draggers == null || draggers.Count == 0 || hCamera == null)
+            if (!cameraShouldLock || !inHScene || !enablePositionDraggers.Value || draggers == null || draggers.Count == 0 || hCamera == null)
                 return true;
 
             if (!draggers.Any(comp => comp != null && comp.isClicked)) 
@@ -294,10 +313,10 @@ namespace AI_BetterHScenes
                 __instance.updateOncePerFrame = true;
         }
         
-        //-- Strip male/futa pants when starting H --//
-        //-- Strip male/futa pants when changing animation --//
-        private static void HScene_StartAnim_StripMalePants() => HScene_StripMalePants(stripMalePantsStartH.Value);
-        private static void HScene_ChangeAnimation_StripMalePants() => HScene_StripMalePants(stripMalePantsChangeAnim.Value);
+        //-- Strip male pants when starting H --//
+        //-- Strip male pants when changing animation --//
+        private static void HScene_StartAnim_StripMalePants() => HScene_StripMalePants(stripMalePants.Value == Tools.StripMalePants.OnHStart);
+        private static void HScene_ChangeAnimation_StripMalePants() => HScene_StripMalePants(stripMalePants.Value == Tools.StripMalePants.OnHStartAndAnimChange);
         private static void HScene_StripMalePants(bool shouldStrip)
         {
             if (!shouldStrip || manager == null || manager.Player == null)
@@ -312,7 +331,7 @@ namespace AI_BetterHScenes
         [HarmonyPostfix, HarmonyPatch(typeof(SiruPasteCtrl), "Proc")]
         public static void SiruPasteCtrl_Proc_PopulateList(SiruPasteCtrl __instance)
         {
-            if (!inHScene || !retainCumAfterH.Value || shouldCleanUp == null)
+            if (!inHScene || cleanCumAfterH.Value == Tools.CleanCum.Off || cleanCumAfterH.Value == Tools.CleanCum.MerchantOnly || shouldCleanUp == null)
                 return;
 
             ChaControl chara = Traverse.Create(__instance).Field("chaFemale").GetValue<ChaControl>();
@@ -334,16 +353,20 @@ namespace AI_BetterHScenes
                     continue;
                 
                 shouldCleanUp.Add(chara);
-                
-                int bathDesireType = Desire.GetDesireKey(Desire.Type.Bath);
-                int lewdDesireType = Desire.GetDesireKey(Desire.Type.H);
 
-                float clampedReason = Tools.Remap(agent.GetFlavorSkill(FlavorSkill.Type.Reason), 0, 99999f, 0, 100f);
-                float clampedDirty = Tools.Remap(agent.GetFlavorSkill(FlavorSkill.Type.Dirty), 0, 99999f, 0, 100f);
-                float clampedLewd = agent.GetDesire(lewdDesireType) ?? 0;
-                float newBathDesire = 100f + clampedReason - clampedDirty - clampedLewd * 1.25f;
-                
-                agent.SetDesire(bathDesireType, Mathf.Clamp(newBathDesire, 0f, 100f));
+                if (increaseBathDesire.Value)
+                {
+                    int bathDesireType = Desire.GetDesireKey(Desire.Type.Bath);
+                    int lewdDesireType = Desire.GetDesireKey(Desire.Type.H);
+
+                    float clampedReason = Tools.Remap(agent.GetFlavorSkill(FlavorSkill.Type.Reason), 0, 99999f, 0, 100f);
+                    float clampedDirty = Tools.Remap(agent.GetFlavorSkill(FlavorSkill.Type.Dirty), 0, 99999f, 0, 100f);
+                    float clampedLewd = agent.GetDesire(lewdDesireType) ?? 0;
+                    float newBathDesire = 100f + clampedReason - clampedDirty - clampedLewd * 1.25f;
+
+                    agent.SetDesire(bathDesireType, Mathf.Clamp(newBathDesire, 0f, 100f));
+                }
+
                 break;
             }
         }

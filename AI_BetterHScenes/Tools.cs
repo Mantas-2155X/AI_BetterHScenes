@@ -12,6 +12,28 @@ namespace AI_BetterHScenes
 {
     public static class Tools
     {
+        public enum StripMalePants
+        {
+            Off,
+            OnHStart,
+            OnHStartAndAnimChange
+        }
+
+        public enum CleanCum
+        {
+            Off,
+            MerchantOnly,
+            AgentsOnly,
+            All
+        }
+        
+        public enum AlwaysHeartGauges
+        {
+            Off,
+            WeaknessOnly,
+            Always
+        }
+
         public static class DraggerData
         {
             public static readonly string[] names =
@@ -54,10 +76,16 @@ namespace AI_BetterHScenes
         
         public static int ChangeSiruIndex()
         {
-            if (AI_BetterHScenes.manager != null && AI_BetterHScenes.manager.bMerchant && AI_BetterHScenes.cleanMerchantCumAfterH.Value)
+            if (AI_BetterHScenes.cleanCumAfterH.Value == CleanCum.Off)
+                return 5;
+            
+            if (AI_BetterHScenes.cleanCumAfterH.Value == CleanCum.All)
                 return 0;
             
-            return AI_BetterHScenes.retainCumAfterH.Value ? 5 : 0;
+            if (AI_BetterHScenes.cleanCumAfterH.Value == CleanCum.MerchantOnly && AI_BetterHScenes.manager != null && AI_BetterHScenes.manager.bMerchant)
+                return 0;
+
+            return 0;
         }
         
         public static bool ChangeUIEnableIndex()
