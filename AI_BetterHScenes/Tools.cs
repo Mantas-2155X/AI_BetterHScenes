@@ -182,6 +182,9 @@ namespace AI_BetterHScenes
             
             AI_BetterHScenes.draggers = new List<DraggerComponent>();
             AI_BetterHScenes.cameraShouldLock = true;
+
+            if (__instance.ctrlFlag != null)
+                Traverse.Create(__instance.ctrlFlag).Field("gotoFaintnessCount").SetValue(AI_BetterHScenes.countToWeakness.Value);
         }
     }
 }

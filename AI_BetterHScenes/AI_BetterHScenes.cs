@@ -23,7 +23,7 @@ namespace AI_BetterHScenes
     [BepInPlugin(nameof(AI_BetterHScenes), nameof(AI_BetterHScenes), VERSION)][BepInProcess("AI-Syoujyo")]
     public class AI_BetterHScenes : BaseUnityPlugin
     {
-        public const string VERSION = "2.1.0";
+        public const string VERSION = "2.1.1";
 
         public new static ManualLogSource Logger;
 
@@ -59,6 +59,7 @@ namespace AI_BetterHScenes
         private static ConfigEntry<Tools.StripMalePants> stripMalePants { get; set; }
         
         //-- Weakness --//
+        public static ConfigEntry<int> countToWeakness { get; set; }
         private static ConfigEntry<bool> forceTearsOnWeakness { get; set; }
         private static ConfigEntry<bool> forceCloseEyesOnWeakness { get; set; }
         
@@ -90,6 +91,7 @@ namespace AI_BetterHScenes
             
             stripMalePants = Config.Bind("QoL > Clothes", "Strip male pants", Tools.StripMalePants.OnHStart, new ConfigDescription("Strip male pants during H"));
             
+            countToWeakness = Config.Bind("QoL > Weakness", "Orgasm count until weakness", 3, new ConfigDescription("How many times does the girl have to orgasm to reach weakness", new AcceptableValueRange<int>(1, 999)));
             forceTearsOnWeakness = Config.Bind("QoL > Weakness", "Tears when weakness is reached", true, new ConfigDescription("Make girl cry when weakness is reached during H"));
             forceCloseEyesOnWeakness = Config.Bind("QoL > Weakness", "Close eyes when weakness is reached", false, new ConfigDescription("Close girl eyes when weakness is reached during H"));
 
@@ -106,6 +108,14 @@ namespace AI_BetterHScenes
             disableMapSimulation = Config.Bind("Performance Improvements", "Disable map simulation*", false, new ConfigDescription("Disable map simulation during H scene (WARNING: May cause some effects to disappear)"));
             optimizeCollisionHelpers = Config.Bind("Performance Improvements", "Optimize collisionhelpers", true, new ConfigDescription("Optimize collisionhelpers by letting them update once per frame"));
 
+            countToWeakness.SettingChanged += delegate
+            {
+                if (!inHScene || hFlagCtrl == null)
+                    return;
+                
+                Traverse.Create(hFlagCtrl).Field("gotoFaintnessCount").SetValue(countToWeakness.Value);
+            };
+            
             hPointSearchRange.SettingChanged += delegate
             {
                 if (!inHScene || hSprite == null)
@@ -154,20 +164,6 @@ namespace AI_BetterHScenes
                     helper.updateOncePerFrame = optimizeCollisionHelpers.Value;
                 }
             };
-            
-            var harmony = new Harmony("AI_BetterHScenes_1");
-            
-            //-- Strip male/futa pants when starting H --//
-            var type_1 = typeof(HScene).GetNestedType("<StartAnim>c__Iterator1", BindingFlags.NonPublic);
-            var method_1 = type_1.GetMethod("MoveNext");
-            var postfix_1 = new HarmonyMethod(typeof(AI_BetterHScenes), nameof(HScene_StartAnim_StripMalePants));
-            harmony.Patch(method_1, null, postfix_1);
-            
-            //-- Strip male/futa pants when changing animation --//
-            var type_2 = typeof(HScene).GetNestedType("<ChangeAnimation>c__Iterator2", BindingFlags.NonPublic);
-            var method_2 = type_2.GetMethod("MoveNext");
-            var postfix_2 = new HarmonyMethod(typeof(AI_BetterHScenes), nameof(HScene_ChangeAnimation_StripMalePants));
-            harmony.Patch(method_2, null, postfix_2);
             
             HarmonyWrapper.PatchAll(typeof(Transpilers));
             HarmonyWrapper.PatchAll(typeof(AI_BetterHScenes));
@@ -314,9 +310,13 @@ namespace AI_BetterHScenes
         }
         
         //-- Strip male pants when starting H --//
-        //-- Strip male pants when changing animation --//
+        [HarmonyPrefix, HarmonyPatch(typeof(HScene), "StartAnim")]
         private static void HScene_StartAnim_StripMalePants() => HScene_StripMalePants(stripMalePants.Value == Tools.StripMalePants.OnHStart);
+        
+        //-- Strip male pants when changing animation --//
+        [HarmonyPrefix, HarmonyPatch(typeof(HScene), "ChangeAnimation")]
         private static void HScene_ChangeAnimation_StripMalePants() => HScene_StripMalePants(stripMalePants.Value == Tools.StripMalePants.OnHStartAndAnimChange);
+
         private static void HScene_StripMalePants(bool shouldStrip)
         {
             if (!shouldStrip || manager == null || manager.Player == null)
