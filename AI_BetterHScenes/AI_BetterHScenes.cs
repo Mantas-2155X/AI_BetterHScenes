@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 
 using HarmonyLib;
 
@@ -59,7 +58,7 @@ namespace AI_BetterHScenes
         private static ConfigEntry<Tools.StripMalePants> stripMalePants { get; set; }
         
         //-- Weakness --//
-        public static ConfigEntry<int> countToWeakness { get; set; }
+        public static ConfigEntry<int> countToWeakness { get; private set; }
         private static ConfigEntry<bool> forceTearsOnWeakness { get; set; }
         private static ConfigEntry<bool> forceCloseEyesOnWeakness { get; set; }
         

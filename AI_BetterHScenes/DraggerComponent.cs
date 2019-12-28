@@ -56,7 +56,9 @@ namespace AI_BetterHScenes
                 OnDisable();
                 return;
             }
-
+            
+            transform.eulerAngles = Vector3.zero;
+            
             int selectedIndex = selectedAxis != null ? Array.IndexOf(axisTransforms, selectedAxis) : 0;
             isSelected = false;
 

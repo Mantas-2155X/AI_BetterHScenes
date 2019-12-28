@@ -169,9 +169,11 @@ namespace AI_BetterHScenes
             AI_BetterHScenes.collisionHelpers = new List<SkinnedCollisionHelper>();
             
             AI_BetterHScenes.hScene = __instance;
+            var hTrav = Traverse.Create(__instance);
+            
             AI_BetterHScenes.hFlagCtrl = __instance.ctrlFlag;
-            AI_BetterHScenes.manager = Traverse.Create(__instance).Field("hSceneManager").GetValue<HSceneManager>();
-            AI_BetterHScenes.hSprite = Traverse.Create(__instance).Field("sprite").GetValue<HSceneSprite>();
+            AI_BetterHScenes.manager = hTrav.Field("hSceneManager").GetValue<HSceneManager>();
+            AI_BetterHScenes.hSprite = hTrav.Field("sprite").GetValue<HSceneSprite>();
             
             if (__instance.ctrlFlag != null && __instance.ctrlFlag.cameraCtrl != null)
                 AI_BetterHScenes.hCamera = __instance.ctrlFlag.cameraCtrl;
