@@ -16,7 +16,10 @@ This plugin fixes HScene performance bugs and adds extra features
 * Retain cum after H (can be cleaned by bathing / changing clothes)
 * Character position draggers
 * Close eyes when reached weakness during H
-* Clean or keep cum on Merchant after H (if retain is enabled)
+* Clean or keep cum on Merchant after H (if retain is enabled)  
+* Always heart gauge  
+* Auto finish  
+* Count till weakness modifier  
 
 **Download:**  
 * Download the latest `AI_BetterHScenes.zip` from https://github.com/Mantas-2155X/AI_BetterHScenes/releases  
