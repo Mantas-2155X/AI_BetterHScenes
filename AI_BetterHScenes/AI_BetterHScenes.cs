@@ -13,7 +13,6 @@ using AIProject.Definitions;
 
 using AIChara;
 using Manager;
-using Illusion.Extensions;
 
 using UnityEngine;
 
@@ -22,7 +21,7 @@ namespace AI_BetterHScenes
     [BepInPlugin(nameof(AI_BetterHScenes), nameof(AI_BetterHScenes), VERSION)][BepInProcess("AI-Syoujyo")]
     public class AI_BetterHScenes : BaseUnityPlugin
     {
-        public const string VERSION = "2.1.1";
+        public const string VERSION = "2.2.0";
 
         public new static ManualLogSource Logger;
 
@@ -32,12 +31,10 @@ namespace AI_BetterHScenes
         public static HSceneManager manager;
         public static HSceneFlagCtrl hFlagCtrl;
         public static HSceneSprite hSprite;
-        
-        public static VirtualCameraController hCamera;
 
-        public static readonly RaycastHit[] hits = new RaycastHit[15];
+        public static Camera mainCamera;
+        public static VirtualCameraController hCamera;
         
-        public static List<DraggerComponent> draggers;
         public static List<ChaControl> characters;
         public static List<ChaControl> shouldCleanUp;
 
@@ -45,22 +42,22 @@ namespace AI_BetterHScenes
         public static GameObject mapSimulation;
         public static List<SkinnedCollisionHelper> collisionHelpers;
 
+        private static bool activeUI;
         public static bool cameraShouldLock; // compatibility with other plugins which might disable the camera control
         private static bool mapShouldEnable; // compatibility with other plugins which might disable the map
         private static bool mapSimulationShouldEnable; // compatibility with other plugins which might disable the map simulation
         
         //-- Draggers --//
-        private static ConfigEntry<bool> enablePositionDraggers { get; set; }
-        private static ConfigEntry<KeyboardShortcut> showMaleDraggers { get; set; }
-        private static ConfigEntry<KeyboardShortcut> showFemaleDraggers { get; set; }
+        private static ConfigEntry<KeyboardShortcut> showDraggerUI { get; set; }
         
         //-- Clothes --//
         private static ConfigEntry<Tools.StripMalePants> stripMalePants { get; set; }
         
         //-- Weakness --//
         public static ConfigEntry<int> countToWeakness { get; private set; }
-        private static ConfigEntry<bool> forceTearsOnWeakness { get; set; }
-        private static ConfigEntry<bool> forceCloseEyesOnWeakness { get; set; }
+        private static ConfigEntry<Tools.OffWeaknessAlways> forceTears { get; set; }
+        private static ConfigEntry<Tools.OffWeaknessAlways> forceCloseEyes { get; set; }
+        private static ConfigEntry<Tools.OffWeaknessAlways> forceStopBlinking { get; set; }
         
         //-- Cum --//
         private static ConfigEntry<bool> autoFinish { get; set; }
@@ -68,7 +65,7 @@ namespace AI_BetterHScenes
         private static ConfigEntry<bool> increaseBathDesire { get; set; }
         
         //-- General --//
-        private static ConfigEntry<Tools.AlwaysHeartGauges> alwaysGaugesHeart { get; set; }
+        private static ConfigEntry<Tools.OffWeaknessAlways> alwaysGaugesHeart { get; set; }
         public static ConfigEntry<bool> keepButtonsInteractive { get; private set; }
         private static ConfigEntry<int> hPointSearchRange { get; set; }
         private static ConfigEntry<bool> unlockCamera { get; set; }
@@ -84,21 +81,20 @@ namespace AI_BetterHScenes
 
             shouldCleanUp = new List<ChaControl>();
 
-            enablePositionDraggers = Config.Bind("QoL > Draggers", "Enable character draggers", false, new ConfigDescription("Enable character position draggers, shown by keys"));
-            showMaleDraggers = Config.Bind("QoL > Draggers", "Show male draggers", new KeyboardShortcut(KeyCode.N));
-            showFemaleDraggers = Config.Bind("QoL > Draggers", "Show female draggers", new KeyboardShortcut(KeyCode.M));
+            showDraggerUI = Config.Bind("QoL > Draggers", "Show draggers UI", new KeyboardShortcut(KeyCode.M));
             
             stripMalePants = Config.Bind("QoL > Clothes", "Strip male pants", Tools.StripMalePants.OnHStart, new ConfigDescription("Strip male pants during H"));
             
             countToWeakness = Config.Bind("QoL > Weakness", "Orgasm count until weakness", 3, new ConfigDescription("How many times does the girl have to orgasm to reach weakness", new AcceptableValueRange<int>(1, 999)));
-            forceTearsOnWeakness = Config.Bind("QoL > Weakness", "Tears when weakness is reached", true, new ConfigDescription("Make girl cry when weakness is reached during H"));
-            forceCloseEyesOnWeakness = Config.Bind("QoL > Weakness", "Close eyes when weakness is reached", false, new ConfigDescription("Close girl eyes when weakness is reached during H"));
+            forceTears = Config.Bind("QoL > Weakness", "Tears when weakness is reached", Tools.OffWeaknessAlways.WeaknessOnly, new ConfigDescription("Make girl cry when weakness is reached during H"));
+            forceCloseEyes = Config.Bind("QoL > Weakness", "Close eyes when weakness is reached", Tools.OffWeaknessAlways.Off, new ConfigDescription("Close girl eyes when weakness is reached during H"));
+            forceStopBlinking = Config.Bind("QoL > Weakness", "Stop blinking when weakness is reached", Tools.OffWeaknessAlways.Off, new ConfigDescription("Stop blinking when weakness is reached during H"));
 
             autoFinish = Config.Bind("QoL > Cum", "Auto finish", false, new ConfigDescription("Automatically finish inside when both gauges reach max"));
             cleanCumAfterH = Config.Bind("QoL > Cum", "Clean cum on body after H", Tools.CleanCum.All, new ConfigDescription("Clean cum on body after H"));
             increaseBathDesire = Config.Bind("QoL > Cum", "Increase bath desire after H", false, new ConfigDescription("Increase bath desire after H (agents only)"));
 
-            alwaysGaugesHeart = Config.Bind("QoL > General", "Always hit gauge heart", Tools.AlwaysHeartGauges.WeaknessOnly, new ConfigDescription("Always hit gauge heart. Will cause progress to increase without having to scroll specific amount"));
+            alwaysGaugesHeart = Config.Bind("QoL > General", "Always hit gauge heart", Tools.OffWeaknessAlways.WeaknessOnly, new ConfigDescription("Always hit gauge heart. Will cause progress to increase without having to scroll specific amount"));
             keepButtonsInteractive = Config.Bind("QoL > General", "Keep UI buttons interactive*", false, new ConfigDescription("Keep buttons interactive during certain events like orgasm (WARNING: May cause bugs)"));
             hPointSearchRange = Config.Bind("QoL > General", "H point search range", 300, new ConfigDescription("Range in which H points are shown when changing location (default 60)", new AcceptableValueRange<int>(1, 999)));
             unlockCamera = Config.Bind("QoL > General", "Unlock camera movement", true, new ConfigDescription("Unlock camera zoom out / distance limit during H"));
@@ -168,8 +164,14 @@ namespace AI_BetterHScenes
             HarmonyWrapper.PatchAll(typeof(AI_BetterHScenes));
         }
 
+        //-- Draw chara draggers UI --//
+        private void OnGUI()
+        {
+            if(activeUI)
+                UI.DrawDraggersUI();
+        }
+
         //-- Auto finish --//
-        //-- Toggle chara position draggers --//
         private void Update()
         {
             if (!inHScene)
@@ -177,70 +179,14 @@ namespace AI_BetterHScenes
 
             if (autoFinish.Value && hFlagCtrl != null && hFlagCtrl.feel_f >= 0.96f && hFlagCtrl.feel_m >= 0.96f)
                 hFlagCtrl.click = HSceneFlagCtrl.ClickKind.FinishSame;
-
-            if (!enablePositionDraggers.Value || draggers == null || draggers.Count == 0)
-                return;
-
-            foreach (var dragger in draggers.Where(dragger => dragger != null && dragger.gameObject != null))
-            {
-                ChaControl chara = dragger.transform.parent.gameObject.GetComponent<ChaControl>();
-                dragger.gameObject.SetActiveIfDifferent(UnityEngine.Input.GetKey(showMaleDraggers.Value.MainKey) && chara.sex == 0 || UnityEngine.Input.GetKey(showFemaleDraggers.Value.MainKey) && chara.sex == 1);
-            }
-        }
-        
-        //-- Always gauges heart --//
-        [HarmonyPostfix, HarmonyPatch(typeof(FeelHit), "isHit")]
-        public static void FeelHit_isHit_AlwaysGaugesHeart(ref bool __result)
-        {
-            if(inHScene && alwaysGaugesHeart.Value == Tools.AlwaysHeartGauges.Always || alwaysGaugesHeart.Value == Tools.AlwaysHeartGauges.WeaknessOnly && hFlagCtrl != null && hFlagCtrl.isFaintness)
-                __result = true;
-        }
-
-        //-- Disable camera control when chara position dragging --//
-        [HarmonyPrefix, HarmonyPatch(typeof(VirtualCameraController), "LateUpdate")]
-        public static bool VirtualCameraController_LateUpdate_Patch(VirtualCameraController __instance)
-        {
-            if (!cameraShouldLock || !inHScene || !enablePositionDraggers.Value || draggers == null || draggers.Count == 0 || hCamera == null)
-                return true;
-
-            if (!draggers.Any(comp => comp != null && comp.isClicked)) 
-                return true;
             
-            Traverse.Create(__instance).Property("isControlNow").SetValue(false);
-            return false;
-        }
-
-        //-- Make girl cry if weakness is reached --//
-        //-- Close girl eyes if weakness is reached --//
-        [HarmonyPrefix, HarmonyPatch(typeof(HVoiceCtrl), "SetFace")]
-        public static void HVoiceCtrl_SetFace_ForceTearsOnWeakness(HVoiceCtrl __instance, ref HVoiceCtrl.FaceInfo _face)
-        {
-            if (!inHScene || !__instance.ctrlFlag.isFaintness || _face == null)
-                return;
-
-            if(forceTearsOnWeakness.Value) 
-                _face.tear = 1f;
-
-            if (!forceCloseEyesOnWeakness.Value) 
-                return;
-            
-            _face.openEye = 0.05f;
-            _face.blink = false;
+            if (showDraggerUI.Value.IsDown())
+                activeUI = !activeUI;
         }
         
-        //-- Keep buttons interactive during certain events like orgasm --//
-        [HarmonyPrefix, HarmonyPatch(typeof(HSceneSpriteCategories), "Changebuttonactive")]
-        public static void HSceneSpriteCategories_Changebuttonactive_KeepButtonsInteractive(ref bool val)
-        {
-            if (keepButtonsInteractive.Value && !val)
-                val = true;
-        }
-        
-        //-- Disable map during H to improve performance --//
-        //-- Disable map simulation during H to improve performance --//
+        //-- Disable map, simulation to improve performance --//
         //-- Remove hcamera movement limit --//
         //-- Change H point search range --//
-        //-- Create chara draggers --//
         [HarmonyPostfix, HarmonyPatch(typeof(HScene), "SetStartVoice")]
         public static void HScene_SetStartVoice_Patch(HScene __instance)
         {
@@ -268,13 +214,9 @@ namespace AI_BetterHScenes
 
             if (hPointSearchRange.Value != 60 && hSprite != null)
                 hSprite.HpointSearchRange = hPointSearchRange.Value;
-
-            Tools.CreateDraggers();
         }
 
-        //-- Enable map after H if disabled previously --//
-        //-- Enable map simulation after H if disabled previously --//
-        //-- Destroy chara draggers --//
+        //-- Enable map, simulation after H if disabled previously --//
         [HarmonyPrefix, HarmonyPatch(typeof(HScene), "EndProc")]
         public static void HScene_EndProc_Patch()
         {
@@ -291,8 +233,50 @@ namespace AI_BetterHScenes
                 mapSimulation.SetActive(true);
                 mapSimulationShouldEnable = false;
             }
+        }
+        
+        //-- Always gauges heart --//
+        [HarmonyPostfix, HarmonyPatch(typeof(FeelHit), "isHit")]
+        public static void FeelHit_isHit_AlwaysGaugesHeart(ref bool __result)
+        {
+            if(inHScene && alwaysGaugesHeart.Value == Tools.OffWeaknessAlways.Always || alwaysGaugesHeart.Value == Tools.OffWeaknessAlways.WeaknessOnly && hFlagCtrl != null && hFlagCtrl.isFaintness)
+                __result = true;
+        }
 
-            Tools.DestroyDraggers();
+        //-- Disable camera control when dragger ui open --//
+        [HarmonyPrefix, HarmonyPatch(typeof(VirtualCameraController), "LateUpdate")]
+        public static bool VirtualCameraController_LateUpdate_Patch(VirtualCameraController __instance)
+        {
+            if (!cameraShouldLock || !activeUI || !inHScene || __instance == null)
+                return true;
+            
+            Traverse.Create(__instance).Property("isControlNow").SetValue(false);
+            return false;
+        }
+        
+        //-- Tears, close eyes, stop blinking --//
+        [HarmonyPrefix, HarmonyPatch(typeof(HVoiceCtrl), "SetFace")]
+        public static void HVoiceCtrl_SetFace_ForceTearsOnWeakness(HVoiceCtrl __instance, ref HVoiceCtrl.FaceInfo _face)
+        {
+            if (!inHScene || _face == null)
+                return;
+
+            if(forceTears.Value == Tools.OffWeaknessAlways.Always || forceTears.Value == Tools.OffWeaknessAlways.WeaknessOnly && __instance.ctrlFlag.isFaintness) 
+                _face.tear = 1f;
+
+            if(forceCloseEyes.Value == Tools.OffWeaknessAlways.Always || forceCloseEyes.Value == Tools.OffWeaknessAlways.WeaknessOnly && __instance.ctrlFlag.isFaintness)
+                _face.openEye = 0.05f;
+            
+            if(forceStopBlinking.Value == Tools.OffWeaknessAlways.Always || forceStopBlinking.Value == Tools.OffWeaknessAlways.WeaknessOnly && __instance.ctrlFlag.isFaintness)
+                _face.blink = false;
+        }
+        
+        //-- Keep buttons interactive during certain events like orgasm --//
+        [HarmonyPrefix, HarmonyPatch(typeof(HSceneSpriteCategories), "Changebuttonactive")]
+        public static void HSceneSpriteCategories_Changebuttonactive_KeepButtonsInteractive(ref bool val)
+        {
+            if (keepButtonsInteractive.Value && !val)
+                val = true;
         }
         
         //-- Fix for the massive FPS drop during HScene insert/service positions --//
@@ -308,24 +292,6 @@ namespace AI_BetterHScenes
                 __instance.updateOncePerFrame = true;
         }
         
-        //-- Strip male pants when starting H --//
-        [HarmonyPrefix, HarmonyPatch(typeof(HScene), "StartAnim")]
-        private static void HScene_StartAnim_StripMalePants() => HScene_StripMalePants(stripMalePants.Value == Tools.StripMalePants.OnHStart);
-        
-        //-- Strip male pants when changing animation --//
-        [HarmonyPrefix, HarmonyPatch(typeof(HScene), "ChangeAnimation")]
-        private static void HScene_ChangeAnimation_StripMalePants() => HScene_StripMalePants(stripMalePants.Value == Tools.StripMalePants.OnHStartAndAnimChange);
-
-        private static void HScene_StripMalePants(bool shouldStrip)
-        {
-            if (!shouldStrip || manager == null || manager.Player == null)
-                return;
-
-            ChaControl ply = manager.Player.ChaControl;
-            if ((ply.sex == 0 || manager.bFutanari) && ply.IsClothesStateKind(1))
-                ply.SetClothesState(1, 2);
-        }
-
         //-- Add character to the shouldCleanUp list & add bath desire --//
         [HarmonyPostfix, HarmonyPatch(typeof(SiruPasteCtrl), "Proc")]
         public static void SiruPasteCtrl_Proc_PopulateList(SiruPasteCtrl __instance)
@@ -377,5 +343,23 @@ namespace AI_BetterHScenes
         //-- Clean up chara after changing if retaining cum effect --//
         [HarmonyPostfix, HarmonyPatch(typeof(ClothChange), "OnCompletedStateTask")]
         public static void ClothChange_OnCompletedStateTask_CleanUp(ClothChange __instance) => Tools.CleanUpSiru(__instance);
+        
+        //-- Strip male pants when starting H --//
+        [HarmonyPrefix, HarmonyPatch(typeof(HScene), "StartAnim")]
+        private static void HScene_StartAnim_StripMalePants() => HScene_StripMalePants(stripMalePants.Value == Tools.StripMalePants.OnHStart);
+        
+        //-- Strip male pants when changing animation --//
+        [HarmonyPrefix, HarmonyPatch(typeof(HScene), "ChangeAnimation")]
+        private static void HScene_ChangeAnimation_StripMalePants() => HScene_StripMalePants(stripMalePants.Value == Tools.StripMalePants.OnHStartAndAnimChange);
+
+        private static void HScene_StripMalePants(bool shouldStrip)
+        {
+            if (!shouldStrip || manager == null || manager.Player == null)
+                return;
+
+            ChaControl ply = manager.Player.ChaControl;
+            if ((ply.sex == 0 || manager.bFutanari) && ply.IsClothesStateKind(1))
+                ply.SetClothesState(1, 2);
+        }
     }
 }

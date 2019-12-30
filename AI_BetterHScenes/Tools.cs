@@ -5,7 +5,6 @@ using HarmonyLib;
 using AIChara;
 using AIProject;
 using Manager;
-
 using UnityEngine;
 
 namespace AI_BetterHScenes
@@ -27,46 +26,11 @@ namespace AI_BetterHScenes
             All
         }
         
-        public enum AlwaysHeartGauges
+        public enum OffWeaknessAlways
         {
             Off,
             WeaknessOnly,
             Always
-        }
-
-        public static class DraggerData
-        {
-            public static readonly string[] names =
-            {
-                "XYZ",
-                "X",
-                "Y",
-                "Z"
-            };
-        
-            public static readonly Color[] colors =
-            {
-                new Color(0.5f, 0.5f, 0.5f, 0.75f), 
-                new Color(0.5f, 0, 0, 0.75f), 
-                new Color(0, 0.5f, 0, 0.75f), 
-                new Color(0, 0, 0.5f, 0.75f)
-            };
-
-            public static readonly Vector3[] scales =
-            {
-                new Vector3(0.5f, 0.5f, 0.5f),
-                new Vector3(3, 0.5f, 0.5f),
-                new Vector3(0.5f, 3, 0.5f),
-                new Vector3(0.5f, 0.5f, 3)
-            };
-        
-            public static readonly Vector3[] positions =
-            {
-                new Vector3(0, 0, 0),
-                new Vector3(1.5f, 0, 0),
-                new Vector3(0, 1.5f, 0),
-                new Vector3(0, 0, 1.5f)
-            };
         }
         
         public static float Remap(float value, float from1, float to1, float from2, float to2) 
@@ -114,53 +78,11 @@ namespace AI_BetterHScenes
 
             AI_BetterHScenes.shouldCleanUp.Remove(agent.ChaControl);
         }
-        
-        public static void CreateDraggers()
-        {
-            foreach (var chara in AI_BetterHScenes.characters)
-            {
-                if (chara == null)
-                    continue;
-                
-                var cObj = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                cObj.transform.SetParent(chara.transform);
-                cObj.layer = 10;
-                cObj.name = "XYZ";
-                cObj.transform.localPosition = Vector3.zero;
-                cObj.transform.eulerAngles = Vector3.zero;
-
-                var centerCopy = Object.Instantiate(cObj);
-                if (centerCopy == null) 
-                    return;
-                
-                for (int i = 0; i < 3; i++)
-                    Object.Instantiate(centerCopy, cObj.transform);
-                
-                Object.Destroy(centerCopy);
-                
-                cObj.AddComponent<DraggerComponent>().SetData(AI_BetterHScenes.hCamera);
-                cObj.SetActive(false);
-                
-                AI_BetterHScenes.draggers.Add(cObj.GetComponent<DraggerComponent>());
-            }
-        }
-        
-        public static void DestroyDraggers()
-        {
-            if (AI_BetterHScenes.characters == null || AI_BetterHScenes.characters.Count == 0)
-                return;
-
-            foreach (var dragger in AI_BetterHScenes.draggers)
-            {
-                if (dragger == null || dragger.gameObject == null)
-                    continue;
-                
-                Object.Destroy(dragger.gameObject);
-            }
-        }
 
         public static void SetupVariables(HScene __instance)
         {
+            AI_BetterHScenes.mainCamera = Camera.main;
+            
             AI_BetterHScenes.map = GameObject.Find("map00_Beach");
             if (AI_BetterHScenes.map == null)
                 AI_BetterHScenes.map = GameObject.Find("map_01_data");
@@ -179,14 +101,15 @@ namespace AI_BetterHScenes
                 AI_BetterHScenes.hCamera = __instance.ctrlFlag.cameraCtrl;
             
             AI_BetterHScenes.characters = new List<ChaControl>();
-            AI_BetterHScenes.characters.AddRange(__instance.GetFemales());
             AI_BetterHScenes.characters.AddRange(__instance.GetMales());
-            
-            AI_BetterHScenes.draggers = new List<DraggerComponent>();
+            AI_BetterHScenes.characters.AddRange(__instance.GetFemales());
+
             AI_BetterHScenes.cameraShouldLock = true;
 
             if (__instance.ctrlFlag != null)
                 Traverse.Create(__instance.ctrlFlag).Field("gotoFaintnessCount").SetValue(AI_BetterHScenes.countToWeakness.Value);
+            
+            UI.InitDraggersUI();
         }
     }
 }
