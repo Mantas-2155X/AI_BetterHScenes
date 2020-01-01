@@ -13,16 +13,16 @@ namespace AI_BetterHScenes
             "-0.1",
             "5",
             "-5",
-            "0.25",
-            "-0.25",
-            "15",
-            "-15",
             "0.5",
             "-0.5",
-            "45",
-            "-45",
+            "15",
+            "-15",
             "1",
             "-1",
+            "45",
+            "-45",
+            "2.5",
+            "-2.5",
             "90",
             "-90"
         };
@@ -110,10 +110,10 @@ namespace AI_BetterHScenes
                 
                     GUILayout.BeginVertical();
                         
-                        charaScrollPos = GUILayout.BeginScrollView(charaScrollPos, false, true, GUILayout.Width(-5 + uiWidth / 4), GUILayout.Height(uiHeight - 60));
+                        charaScrollPos = GUILayout.BeginScrollView(charaScrollPos, true, true, GUILayout.Width(-5 + uiWidth / 4), GUILayout.Height(uiHeight - 60));
                         
                             for(int i = 0; i < characterToggles.Length; i++)
-                                characterToggles[i] = GUILayout.Toggle(characterToggles[i], validCharacters[i].name);
+                                characterToggles[i] = GUILayout.Toggle(characterToggles[i], validCharacters[i].chaFile.parameter.fullname);
 
                         GUILayout.EndScrollView();
                         
@@ -154,10 +154,10 @@ namespace AI_BetterHScenes
 
                         GUILayout.BeginHorizontal();
 
-                            if (GUILayout.Button(dragType == 0 ? ">Position<" : "Position"))
+                            if (GUILayout.Button(dragType == 0 ? ">Position<" : " Position "))
                                 dragType = 0;
             
-                            if (GUILayout.Button(dragType == 3 ? ">Rotation<" : "Rotation"))
+                            if (GUILayout.Button(dragType == 3 ? ">Rotation<" : " Rotation "))
                                 dragType = 3;
                             
 

@@ -11,13 +11,6 @@ namespace AI_BetterHScenes
 {
     public static class Tools
     {
-        public enum StripMalePants
-        {
-            Off,
-            OnHStart,
-            OnHStartAndAnimChange
-        }
-
         public enum CleanCum
         {
             Off,
@@ -26,13 +19,51 @@ namespace AI_BetterHScenes
             All
         }
         
+        public enum OffHStartAnimChange
+        {
+            Off,
+            OnHStart,
+            OnHStartAndAnimChange
+        }
+        
         public enum OffWeaknessAlways
         {
             Off,
             WeaknessOnly,
             Always
         }
-        
+
+        public enum ClothesStrip
+        {
+            Off,
+            Half,
+            Full
+        }
+
+        public enum AutoFinish
+        {
+            Off,
+            ServiceOnly,
+            InsertOnly,
+            Both
+        }
+
+        public enum AutoServicePrefer
+        {
+            Drink,
+            Spit,
+            Outside,
+            Random
+        }
+
+        public enum AutoInsertPrefer
+        {
+            Inside,
+            Outside,
+            Same,
+            Random
+        }
+
         public static float Remap(float value, float from1, float to1, float from2, float to2) 
         {
             return (value - from1) / (to1 - from1) * (to2 - from2) + from2;
@@ -81,8 +112,6 @@ namespace AI_BetterHScenes
 
         public static void SetupVariables(HScene __instance)
         {
-            AI_BetterHScenes.mainCamera = Camera.main;
-            
             AI_BetterHScenes.map = GameObject.Find("map00_Beach");
             if (AI_BetterHScenes.map == null)
                 AI_BetterHScenes.map = GameObject.Find("map_01_data");
