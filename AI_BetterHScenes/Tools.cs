@@ -37,7 +37,7 @@ namespace AI_BetterHScenes
         {
             Off,
             Half,
-            Full
+            All
         }
 
         public enum AutoFinish
@@ -64,9 +64,31 @@ namespace AI_BetterHScenes
             Random
         }
 
+        private static readonly string[] finishFindTransforms =
+        {
+            "finishDrinkTex",
+            "finishVomitTex",
+            "finishOutTex",
+            "finishInTex",
+            "finishSynchroTex"
+        };
+        
         public static float Remap(float value, float from1, float to1, float from2, float to2) 
         {
             return (value - from1) / (to1 - from1) * (to2 - from2) + from2;
+        }
+        
+        public static bool newChangebuttonactive()
+        {
+            if (AI_BetterHScenes.keepButtonsInteractive.Value && AI_BetterHScenes.hFlagCtrl.nowOrgasm)
+                return true;
+            
+            return !AI_BetterHScenes.hFlagCtrl.nowOrgasm;
+        }
+
+        public static bool newUIDisable()
+        {
+            return AI_BetterHScenes.keepButtonsInteractive.Value;
         }
         
         public static int ChangeSiruIndex()
@@ -81,11 +103,6 @@ namespace AI_BetterHScenes
                 return 0;
 
             return 0;
-        }
-        
-        public static bool ChangeUIEnableIndex()
-        {
-            return AI_BetterHScenes.keepButtonsInteractive.Value;
         }
         
         public static void CleanUpSiru(AgentStateAction __instance)
@@ -126,9 +143,6 @@ namespace AI_BetterHScenes
             AI_BetterHScenes.manager = hTrav.Field("hSceneManager").GetValue<HSceneManager>();
             AI_BetterHScenes.hSprite = hTrav.Field("sprite").GetValue<HSceneSprite>();
             
-            if (__instance.ctrlFlag != null && __instance.ctrlFlag.cameraCtrl != null)
-                AI_BetterHScenes.hCamera = __instance.ctrlFlag.cameraCtrl;
-            
             AI_BetterHScenes.characters = new List<ChaControl>();
             AI_BetterHScenes.characters.AddRange(__instance.GetMales());
             AI_BetterHScenes.characters.AddRange(__instance.GetFemales());
@@ -136,8 +150,17 @@ namespace AI_BetterHScenes
             AI_BetterHScenes.cameraShouldLock = true;
 
             if (__instance.ctrlFlag != null)
+            {
                 Traverse.Create(__instance.ctrlFlag).Field("gotoFaintnessCount").SetValue(AI_BetterHScenes.countToWeakness.Value);
-            
+                
+                if (__instance.ctrlFlag.cameraCtrl != null)
+                    AI_BetterHScenes.hCamera = __instance.ctrlFlag.cameraCtrl;
+            }
+
+            AI_BetterHScenes.finishObjects = new List<GameObject>();
+            foreach (var name in finishFindTransforms)
+                AI_BetterHScenes.finishObjects.Add(AI_BetterHScenes.hSprite.categoryFinish.transform.Find(name).gameObject);
+
             UI.InitDraggersUI();
         }
     }

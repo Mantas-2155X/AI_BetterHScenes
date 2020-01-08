@@ -10,20 +10,24 @@ namespace AI_BetterHScenes
         private static readonly string[] increments =
         {
             "0.1",
-            "-0.1",
-            "5",
-            "-5",
+            "0.25",
             "0.5",
-            "-0.5",
-            "15",
-            "-15",
             "1",
+            "2",
+            "-0.1",
+            "-0.25",
+            "-0.5",
             "-1",
+            "-2",
+            "5",
+            "15",
+            "30",
             "45",
-            "-45",
-            "2.5",
-            "-2.5",
             "90",
+            "-5",
+            "-15",
+            "-30",
+            "-45",
             "-90"
         };
         
@@ -44,7 +48,7 @@ namespace AI_BetterHScenes
         private const int uiWidth = 425;
         private const int uiHeight = 179;
         
-        private static Rect window = new Rect(10, 10, uiWidth, uiHeight);
+        private static Rect window = new Rect(Screen.width / 2 - uiWidth / 2, 10, uiWidth, uiHeight);
         private static Vector2 charaScrollPos;
         private static int selInt = -1;
         private static int dragType;
@@ -166,7 +170,7 @@ namespace AI_BetterHScenes
                         GUILayout.BeginHorizontal();
 
                             selInt = -1;
-                            selInt = GUILayout.SelectionGrid(selInt, increments, 4);
+                            selInt = GUILayout.SelectionGrid(selInt, increments, 5);
 
                             if (selInt > -1)
                                 MoveCharacter(float.Parse(increments[selInt]));

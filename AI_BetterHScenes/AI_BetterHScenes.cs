@@ -15,6 +15,7 @@ using AIChara;
 using Manager;
 
 using UnityEngine;
+using Map = Manager.Map;
 
 namespace AI_BetterHScenes
 {
@@ -36,6 +37,7 @@ namespace AI_BetterHScenes
         
         public static List<ChaControl> characters;
         public static List<ChaControl> shouldCleanUp;
+        public static List<GameObject> finishObjects;
 
         public static GameObject map;
         public static GameObject mapSimulation;
@@ -45,7 +47,7 @@ namespace AI_BetterHScenes
         public static bool cameraShouldLock; // compatibility with other plugins which might disable the camera control
         private static bool mapShouldEnable; // compatibility with other plugins which might disable the map
         private static bool mapSimulationShouldEnable; // compatibility with other plugins which might disable the map simulation
-        
+
         //-- Draggers --//
         private static ConfigEntry<KeyboardShortcut> showDraggerUI { get; set; }
         
@@ -103,8 +105,8 @@ namespace AI_BetterHScenes
             preventDefaultAnimationChangeStrip = Config.Bind("QoL > Clothes", "Prevent default animationchange strip", true, new ConfigDescription("Prevent default animation change clothes strip (pants, panties, top half state)"));
             
             stripMaleClothes = Config.Bind("QoL > Clothes", "Should strip male clothes", Tools.OffHStartAnimChange.OnHStart, new ConfigDescription("Should strip male clothes during H"));
-            stripMaleTop = Config.Bind("QoL > Clothes", "Strip male top", Tools.ClothesStrip.Full, new ConfigDescription("Strip male top during H"));
-            stripMaleBottom = Config.Bind("QoL > Clothes", "Strip male bottom", Tools.ClothesStrip.Full, new ConfigDescription("Strip male bottom during H"));
+            stripMaleTop = Config.Bind("QoL > Clothes", "Strip male top", Tools.ClothesStrip.All, new ConfigDescription("Strip male top during H"));
+            stripMaleBottom = Config.Bind("QoL > Clothes", "Strip male bottom", Tools.ClothesStrip.All, new ConfigDescription("Strip male bottom during H"));
             stripMaleGloves = Config.Bind("QoL > Clothes", "Strip male gloves", Tools.ClothesStrip.Off, new ConfigDescription("Strip male gloves during H"));
             stripMaleShoes = Config.Bind("QoL > Clothes", "Strip male shoes", Tools.ClothesStrip.Off, new ConfigDescription("Strip male shoes during H"));
 
@@ -194,7 +196,7 @@ namespace AI_BetterHScenes
                     helper.updateOncePerFrame = optimizeCollisionHelpers.Value;
                 }
             };
-            
+
             HarmonyWrapper.PatchAll(typeof(Transpilers));
             HarmonyWrapper.PatchAll(typeof(AI_BetterHScenes));
         }
@@ -202,7 +204,7 @@ namespace AI_BetterHScenes
         //-- Draw chara draggers UI --//
         private void OnGUI()
         {
-            if(activeUI)
+            if(inHScene && activeUI)
                 UI.DrawDraggersUI();
         }
 
@@ -212,102 +214,102 @@ namespace AI_BetterHScenes
             if (!inHScene)
                 return;
             
-            if (autoFinish.Value != Tools.AutoFinish.Off && hFlagCtrl != null)
-            {
-                int mode = Traverse.Create(hScene).Field("mode").GetValue<int>();
-
-                switch (mode)
-                {
-                    case 1 when hFlagCtrl.feel_m >= 0.98f && (autoFinish.Value == Tools.AutoFinish.ServiceOnly || autoFinish.Value == Tools.AutoFinish.Both): // Houshi
-                    {
-                        bool drink = hSprite.categoryFinish.transform.Find("finishDrinkTex").gameObject.activeSelf;
-                        bool vomit = hSprite.categoryFinish.transform.Find("finishVomitTex").gameObject.activeSelf;
-                        bool onbody = hSprite.categoryFinish.transform.Find("finishOutTex").gameObject.activeSelf;
-                    
-                        switch (autoServicePrefer.Value)
-                        {
-                            case Tools.AutoServicePrefer.Drink when drink:
-                                hFlagCtrl.click = HSceneFlagCtrl.ClickKind.FinishDrink;
-                                break;
-                            case Tools.AutoServicePrefer.Spit when vomit:
-                                hFlagCtrl.click = HSceneFlagCtrl.ClickKind.FinishVomit;
-                                break;
-                            case Tools.AutoServicePrefer.Outside when onbody:
-                                hFlagCtrl.click = HSceneFlagCtrl.ClickKind.FinishOutSide;
-                                break;
-                            case Tools.AutoServicePrefer.Random:
-                                List<HSceneFlagCtrl.ClickKind> random = new List<HSceneFlagCtrl.ClickKind>();
-                                if(drink)
-                                    random.Add(HSceneFlagCtrl.ClickKind.FinishDrink);
-                                if(vomit)
-                                    random.Add(HSceneFlagCtrl.ClickKind.FinishVomit);
-                                if(onbody)
-                                    random.Add(HSceneFlagCtrl.ClickKind.FinishOutSide);
-
-                                if (random.Count < 1)
-                                    break;
-                                
-                                var rand = new System.Random();
-                                hFlagCtrl.click = random[rand.Next(random.Count)];
-
-                                break;
-                            default:
-                                hFlagCtrl.click = drink ? HSceneFlagCtrl.ClickKind.FinishDrink : vomit ? HSceneFlagCtrl.ClickKind.FinishVomit : onbody ? HSceneFlagCtrl.ClickKind.FinishOutSide : HSceneFlagCtrl.ClickKind.None;
-                                break;
-                        }
-
-                        break;
-                    }
-                    case 2 when hFlagCtrl.feel_f >= 0.98f && hFlagCtrl.feel_m >= 0.98f && (autoFinish.Value == Tools.AutoFinish.InsertOnly || autoFinish.Value == Tools.AutoFinish.Both): // Sonyu
-                    {
-                        bool inside = hSprite.categoryFinish.transform.Find("finishInTex").gameObject.activeSelf;
-                        bool outside = hSprite.categoryFinish.transform.Find("finishOutTex").gameObject.activeSelf;
-                        bool same = hSprite.categoryFinish.transform.Find("finishSynchroTex").gameObject.activeSelf;
-                    
-                        switch (autoInsertPrefer.Value)
-                        {
-                            case Tools.AutoInsertPrefer.Inside when inside:
-                                hFlagCtrl.click = HSceneFlagCtrl.ClickKind.FinishInSide;
-                                break;
-                            case Tools.AutoInsertPrefer.Outside when outside:
-                                hFlagCtrl.click = HSceneFlagCtrl.ClickKind.FinishOutSide;
-                                break;
-                            case Tools.AutoInsertPrefer.Same when same:
-                                hFlagCtrl.click = HSceneFlagCtrl.ClickKind.FinishSame;
-                                break;
-                            case Tools.AutoInsertPrefer.Random:
-                                List<HSceneFlagCtrl.ClickKind> random = new List<HSceneFlagCtrl.ClickKind>();
-                                if(inside)
-                                    random.Add(HSceneFlagCtrl.ClickKind.FinishInSide);
-                                if(outside)
-                                    random.Add(HSceneFlagCtrl.ClickKind.FinishOutSide);
-                                if(same)
-                                    random.Add(HSceneFlagCtrl.ClickKind.FinishSame);
-
-                                if (random.Count < 1)
-                                    break;
-                                
-                                var rand = new System.Random();
-                                hFlagCtrl.click = random[rand.Next(random.Count)];
-
-                                break;
-                            default:
-                                hFlagCtrl.click = inside ? HSceneFlagCtrl.ClickKind.FinishInSide : outside ? HSceneFlagCtrl.ClickKind.FinishOutSide : same ? HSceneFlagCtrl.ClickKind.FinishSame : HSceneFlagCtrl.ClickKind.None;
-                                break;
-                        }
-
-                        break;
-                    }
-                }
-            }
-            
             if (showDraggerUI.Value.IsDown())
                 activeUI = !activeUI;
+
+            if (autoFinish.Value == Tools.AutoFinish.Off || hFlagCtrl == null || finishObjects == null || finishObjects.Count == 0) 
+                return;
+            
+            int mode = Traverse.Create(hScene).Field("mode").GetValue<int>();
+            switch (mode)
+            {
+                case 1 when hFlagCtrl.feel_m >= 0.98f && (autoFinish.Value == Tools.AutoFinish.ServiceOnly || autoFinish.Value == Tools.AutoFinish.Both): // Houshi
+                {
+                    bool drink = finishObjects[0].activeSelf;
+                    bool vomit = finishObjects[1].activeSelf;
+                    bool onbody = finishObjects[2].activeSelf;
+                    
+                    switch (autoServicePrefer.Value)
+                    {
+                        case Tools.AutoServicePrefer.Drink when drink:
+                            hFlagCtrl.click = HSceneFlagCtrl.ClickKind.FinishDrink;
+                            break;
+                        case Tools.AutoServicePrefer.Spit when vomit:
+                            hFlagCtrl.click = HSceneFlagCtrl.ClickKind.FinishVomit;
+                            break;
+                        case Tools.AutoServicePrefer.Outside when onbody:
+                            hFlagCtrl.click = HSceneFlagCtrl.ClickKind.FinishOutSide;
+                            break;
+                        case Tools.AutoServicePrefer.Random:
+                            List<HSceneFlagCtrl.ClickKind> random = new List<HSceneFlagCtrl.ClickKind>();
+                            if(drink)
+                                random.Add(HSceneFlagCtrl.ClickKind.FinishDrink);
+                            if(vomit)
+                                random.Add(HSceneFlagCtrl.ClickKind.FinishVomit);
+                            if(onbody)
+                                random.Add(HSceneFlagCtrl.ClickKind.FinishOutSide);
+
+                            if (random.Count < 1)
+                                break;
+                                
+                            var rand = new System.Random();
+                            hFlagCtrl.click = random[rand.Next(random.Count)];
+
+                            break;
+                        default:
+                            hFlagCtrl.click = drink ? HSceneFlagCtrl.ClickKind.FinishDrink : vomit ? HSceneFlagCtrl.ClickKind.FinishVomit : onbody ? HSceneFlagCtrl.ClickKind.FinishOutSide : HSceneFlagCtrl.ClickKind.None;
+                            break;
+                    }
+
+                    break;
+                }
+                case 2 when hFlagCtrl.feel_f >= 0.98f && hFlagCtrl.feel_m >= 0.98f && (autoFinish.Value == Tools.AutoFinish.InsertOnly || autoFinish.Value == Tools.AutoFinish.Both): // Sonyu
+                {
+                    bool inside = finishObjects[3].activeSelf;
+                    bool outside = finishObjects[2].activeSelf;
+                    bool same = finishObjects[4].activeSelf;
+                    
+                    switch (autoInsertPrefer.Value)
+                    {
+                        case Tools.AutoInsertPrefer.Inside when inside:
+                            hFlagCtrl.click = HSceneFlagCtrl.ClickKind.FinishInSide;
+                            break;
+                        case Tools.AutoInsertPrefer.Outside when outside:
+                            hFlagCtrl.click = HSceneFlagCtrl.ClickKind.FinishOutSide;
+                            break;
+                        case Tools.AutoInsertPrefer.Same when same:
+                            hFlagCtrl.click = HSceneFlagCtrl.ClickKind.FinishSame;
+                            break;
+                        case Tools.AutoInsertPrefer.Random:
+                            List<HSceneFlagCtrl.ClickKind> random = new List<HSceneFlagCtrl.ClickKind>();
+                            if(inside)
+                                random.Add(HSceneFlagCtrl.ClickKind.FinishInSide);
+                            if(outside)
+                                random.Add(HSceneFlagCtrl.ClickKind.FinishOutSide);
+                            if(same)
+                                random.Add(HSceneFlagCtrl.ClickKind.FinishSame);
+
+                            if (random.Count < 1)
+                                break;
+                                
+                            var rand = new System.Random();
+                            hFlagCtrl.click = random[rand.Next(random.Count)];
+
+                            break;
+                        default:
+                            hFlagCtrl.click = inside ? HSceneFlagCtrl.ClickKind.FinishInSide : outside ? HSceneFlagCtrl.ClickKind.FinishOutSide : same ? HSceneFlagCtrl.ClickKind.FinishSame : HSceneFlagCtrl.ClickKind.None;
+                            break;
+                    }
+
+                    break;
+                }
+            }
         }
         
         //-- Disable map, simulation to improve performance --//
         //-- Remove hcamera movement limit --//
         //-- Change H point search range --//
+        //-- Strip clothes when starting H --//
         [HarmonyPostfix, HarmonyPatch(typeof(HScene), "SetStartVoice")]
         public static void HScene_SetStartVoice_Patch(HScene __instance)
         {
@@ -335,9 +337,12 @@ namespace AI_BetterHScenes
 
             if (hPointSearchRange.Value != 60 && hSprite != null)
                 hSprite.HpointSearchRange = hPointSearchRange.Value;
+            
+            HScene_StripClothes(stripMaleClothes.Value == Tools.OffHStartAnimChange.OnHStart || stripFemaleClothes.Value == Tools.OffHStartAnimChange.OnHStart);
         }
 
         //-- Enable map, simulation after H if disabled previously, disable dragger UI --//
+        //-- Set bath desire after h --//
         [HarmonyPrefix, HarmonyPatch(typeof(HScene), "EndProc")]
         public static void HScene_EndProc_Patch()
         {
@@ -356,11 +361,37 @@ namespace AI_BetterHScenes
             }
 
             activeUI = false;
+
+            if (!increaseBathDesire.Value || manager != null && manager.bMerchant)
+                return;
+
+            var females = hScene.GetFemales();
+            var agentTable = Singleton<Map>.Instance.AgentTable;
+
+            if (females == null || agentTable == null)
+                return;
+            
+            foreach (var female in females.Where(female => female != null))
+            {
+                var agent = agentTable.First(pair => pair.Value != null && pair.Value.ChaControl == female).Value;
+                if (agent == null)
+                    continue;
+                
+                int bathDesireType = Desire.GetDesireKey(Desire.Type.Bath);
+                int lewdDesireType = Desire.GetDesireKey(Desire.Type.H);
+
+                float clampedReason = Tools.Remap(agent.GetFlavorSkill(FlavorSkill.Type.Reason), 0, 99999f, 0, 100f);
+                float clampedDirty = Tools.Remap(agent.GetFlavorSkill(FlavorSkill.Type.Dirty), 0, 99999f, 0, 100f);
+                float clampedLewd = agent.GetDesire(lewdDesireType) ?? 0;
+                float newBathDesire = 100f + (clampedReason * 1.25f) - clampedDirty - clampedLewd * 1.5f;
+
+                agent.SetDesire(bathDesireType, Mathf.Clamp(newBathDesire, 0f, 100f));
+            }
         }
         
         //-- Prevent default animation change clothes strip --//
         [HarmonyPrefix, HarmonyPatch(typeof(HScene), "SetClothStateStartMotion")]
-        public static bool HScene_SetClothStateStartMotion_Patch()
+        public static bool HScene_SetClothStateStartMotion_PreventDefaultClothesStrip()
         {
             return !inHScene || !preventDefaultAnimationChangeStrip.Value;
         }
@@ -375,40 +406,32 @@ namespace AI_BetterHScenes
 
         //-- Disable camera control when dragger ui open --//
         [HarmonyPrefix, HarmonyPatch(typeof(VirtualCameraController), "LateUpdate")]
-        public static bool VirtualCameraController_LateUpdate_Patch(VirtualCameraController __instance)
+        public static bool VirtualCameraController_LateUpdate_DisableCameraControl(VirtualCameraController __instance)
         {
-            if (!cameraShouldLock || !activeUI || !inHScene || __instance == null)
+            if (!inHScene || !cameraShouldLock || !activeUI || __instance == null)
                 return true;
             
             Traverse.Create(__instance).Property("isControlNow").SetValue(false);
             return false;
         }
-        
+   
         //-- Tears, close eyes, stop blinking --//
         [HarmonyPrefix, HarmonyPatch(typeof(HVoiceCtrl), "SetFace")]
-        public static void HVoiceCtrl_SetFace_ForceTearsOnWeakness(HVoiceCtrl __instance, ref HVoiceCtrl.FaceInfo _face)
+        public static void HVoiceCtrl_SetFace_ForceTearsOnWeakness(ref HVoiceCtrl.FaceInfo _face)
         {
             if (!inHScene || _face == null)
                 return;
 
-            if(forceTears.Value == Tools.OffWeaknessAlways.Always || forceTears.Value == Tools.OffWeaknessAlways.WeaknessOnly && __instance.ctrlFlag.isFaintness) 
+            if(forceTears.Value == Tools.OffWeaknessAlways.Always || forceTears.Value == Tools.OffWeaknessAlways.WeaknessOnly && hFlagCtrl.isFaintness) 
                 _face.tear = 1f;
 
-            if(forceCloseEyes.Value == Tools.OffWeaknessAlways.Always || forceCloseEyes.Value == Tools.OffWeaknessAlways.WeaknessOnly && __instance.ctrlFlag.isFaintness)
+            if(forceCloseEyes.Value == Tools.OffWeaknessAlways.Always || forceCloseEyes.Value == Tools.OffWeaknessAlways.WeaknessOnly && hFlagCtrl.isFaintness)
                 _face.openEye = 0.05f;
             
-            if(forceStopBlinking.Value == Tools.OffWeaknessAlways.Always || forceStopBlinking.Value == Tools.OffWeaknessAlways.WeaknessOnly && __instance.ctrlFlag.isFaintness)
+            if(forceStopBlinking.Value == Tools.OffWeaknessAlways.Always || forceStopBlinking.Value == Tools.OffWeaknessAlways.WeaknessOnly && hFlagCtrl.isFaintness)
                 _face.blink = false;
         }
-        
-        //-- Keep buttons interactive during certain events like orgasm --//
-        [HarmonyPrefix, HarmonyPatch(typeof(HSceneSpriteCategories), "Changebuttonactive")]
-        public static void HSceneSpriteCategories_Changebuttonactive_KeepButtonsInteractive(ref bool val)
-        {
-            if (keepButtonsInteractive.Value && !val)
-                val = true;
-        }
-        
+
         //-- Fix for the massive FPS drop during HScene insert/service positions --//
         [HarmonyPostfix, HarmonyPatch(typeof(SkinnedCollisionHelper), "Init")]
         public static void SkinnedCollisionHelper_Init_UpdateOncePerFrame(SkinnedCollisionHelper __instance)
@@ -422,129 +445,87 @@ namespace AI_BetterHScenes
                 __instance.updateOncePerFrame = true;
         }
         
-        //-- Add character to the shouldCleanUp list & add bath desire --//
+        //-- Add character to the shouldCleanUp list --//
         [HarmonyPostfix, HarmonyPatch(typeof(SiruPasteCtrl), "Proc")]
-        public static void SiruPasteCtrl_Proc_PopulateList(SiruPasteCtrl __instance)
+        public static void SiruPasteCtrl_Proc_PopulateList(ChaControl ___chaFemale)
         {
             if (!inHScene || cleanCumAfterH.Value == Tools.CleanCum.Off || cleanCumAfterH.Value == Tools.CleanCum.MerchantOnly || shouldCleanUp == null)
                 return;
 
-            ChaControl chara = Traverse.Create(__instance).Field("chaFemale").GetValue<ChaControl>();
-            if (chara == null || shouldCleanUp.Contains(chara))
+            ChaControl chara = ___chaFemale;
+            if (chara == null || chara.isPlayer || shouldCleanUp.Contains(chara) || (manager != null && manager.bMerchant))
                 return;
 
-            if (manager != null && (manager.bMerchant || manager.Player.ChaControl == chara))
-                return;
-            
-            AgentActor agent = Singleton<Manager.Map>.Instance.AgentTable.Values.FirstOrDefault(actor => actor != null && actor.ChaControl == chara);
+            AgentActor agent = Singleton<Map>.Instance.AgentTable.Values.FirstOrDefault(actor => actor != null && actor.ChaControl == chara);
             if (agent == null)
                 return;
             
             for (int i = 0; i < 5; i++)
             {
-                ChaFileDefine.SiruParts parts = (ChaFileDefine.SiruParts)i;
-                
-                if (chara.GetSiruFlag(parts) == 0) 
+                if (chara.GetSiruFlag((ChaFileDefine.SiruParts)i) == 0) 
                     continue;
                 
                 shouldCleanUp.Add(chara);
-
-                if (increaseBathDesire.Value)
-                {
-                    int bathDesireType = Desire.GetDesireKey(Desire.Type.Bath);
-                    int lewdDesireType = Desire.GetDesireKey(Desire.Type.H);
-
-                    float clampedReason = Tools.Remap(agent.GetFlavorSkill(FlavorSkill.Type.Reason), 0, 99999f, 0, 100f);
-                    float clampedDirty = Tools.Remap(agent.GetFlavorSkill(FlavorSkill.Type.Dirty), 0, 99999f, 0, 100f);
-                    float clampedLewd = agent.GetDesire(lewdDesireType) ?? 0;
-                    float newBathDesire = 100f + clampedReason - clampedDirty - clampedLewd * 1.25f;
-
-                    agent.SetDesire(bathDesireType, Mathf.Clamp(newBathDesire, 0f, 100f));
-                }
-
                 break;
             }
         }
         
         //-- Clean up chara after bath if retaining cum effect --//
         [HarmonyPostfix, HarmonyPatch(typeof(Bath), "OnCompletedStateTask")]
-        public static void Bath_OnCompletedStateTask_CleanUp(Bath __instance) => Tools.CleanUpSiru(__instance);
+        public static void Bath_OnCompletedStateTask_CleanUpCum(Bath __instance) => Tools.CleanUpSiru(__instance);
         
         //-- Clean up chara after changing if retaining cum effect --//
         [HarmonyPostfix, HarmonyPatch(typeof(ClothChange), "OnCompletedStateTask")]
-        public static void ClothChange_OnCompletedStateTask_CleanUp(ClothChange __instance) => Tools.CleanUpSiru(__instance);
-        
-        //-- Strip clothes when starting H --//
-        [HarmonyPrefix, HarmonyPatch(typeof(HScene), "StartAnim")]
-        private static void HScene_StartAnim_Patch() => HScene_StripClothes(stripMaleClothes.Value == Tools.OffHStartAnimChange.OnHStart || stripFemaleClothes.Value == Tools.OffHStartAnimChange.OnHStart);
+        public static void ClothChange_OnCompletedStateTask_CleanUpCum(ClothChange __instance) => Tools.CleanUpSiru(__instance);
         
         //-- Strip clothes when changing animation --//
         [HarmonyPrefix, HarmonyPatch(typeof(HScene), "ChangeAnimation")]
-        private static void HScene_ChangeAnimation_Patch() => HScene_StripClothes(stripMaleClothes.Value == Tools.OffHStartAnimChange.OnHStartAndAnimChange || stripFemaleClothes.Value == Tools.OffHStartAnimChange.OnHStartAndAnimChange);
+        private static void HScene_ChangeAnimation_StripClothes() => HScene_StripClothes(stripMaleClothes.Value == Tools.OffHStartAnimChange.OnHStartAndAnimChange || stripFemaleClothes.Value == Tools.OffHStartAnimChange.OnHStartAndAnimChange);
 
         private static void HScene_StripClothes(bool shouldStrip)
         {
-            if (!shouldStrip || !inHScene || hScene == null)
+            if (!inHScene || !shouldStrip || hScene == null)
                 return;
 
             bool stripMales = stripMaleClothes.Value != Tools.OffHStartAnimChange.Off;
             bool stripFemales = stripFemaleClothes.Value != Tools.OffHStartAnimChange.Off;
-            
-            if(stripMales)
-                foreach (var male in hScene.GetMales().Where(male => male != null))
-                {
-                    Tools.ClothesStrip stripAmount = stripMaleTop.Value;
-                    if(stripAmount > 0 && male.IsClothesStateKind(0) && male.fileStatus.clothesState[0] != 2)
-                        male.SetClothesState(0, (byte)stripAmount);
-                    
-                    stripAmount = stripMaleBottom.Value;
-                    if(stripAmount > 0 && male.IsClothesStateKind(1) && male.fileStatus.clothesState[1] != 2)
-                        male.SetClothesState(1, (byte)stripAmount);
-                    
-                    stripAmount = stripMaleGloves.Value;
-                    if(stripAmount > 0 && male.IsClothesStateKind(4) && male.fileStatus.clothesState[4] != 2)
-                        male.SetClothesState(4, (byte)stripAmount);
-                    
-                    stripAmount = stripMaleShoes.Value;
-                    if(stripAmount > 0 && male.IsClothesStateKind(7) && male.fileStatus.clothesState[7] != 2)
-                        male.SetClothesState(7, (byte)stripAmount);
-                }
-            
-            if(stripFemales)
-                foreach (var female in hScene.GetFemales().Where(female => female != null))
-                {
-                    Tools.ClothesStrip stripAmount = stripFemaleTop.Value;
-                    if(stripAmount > 0 && female.IsClothesStateKind(0) && female.fileStatus.clothesState[0] != 2)
-                        female.SetClothesState(0, (byte)stripAmount);
-                    
-                    stripAmount = stripFemaleBottom.Value;
-                    if(stripAmount > 0 && female.IsClothesStateKind(1) && female.fileStatus.clothesState[1] != 2)
-                        female.SetClothesState(1, (byte)stripAmount);
-                    
-                    stripAmount = stripFemaleBra.Value;
-                    if(stripAmount > 0 && female.IsClothesStateKind(2) && female.fileStatus.clothesState[2] != 2)
-                        female.SetClothesState(2, (byte)stripAmount);
-                    
-                    stripAmount = stripFemalePanties.Value;
-                    if(stripAmount > 0 && female.IsClothesStateKind(3) && female.fileStatus.clothesState[3] != 2)
-                        female.SetClothesState(3, (byte)stripAmount);
-                    
-                    stripAmount = stripFemaleGloves.Value;
-                    if(stripAmount > 0 && female.IsClothesStateKind(4) && female.fileStatus.clothesState[4] != 2)
-                        female.SetClothesState(4, (byte)stripAmount);
-                    
-                    stripAmount = stripFemalePantyhose.Value;
-                    if(stripAmount > 0 && female.IsClothesStateKind(5) && female.fileStatus.clothesState[5] != 2)
-                        female.SetClothesState(5, (byte)stripAmount);
-                    
-                    stripAmount = stripFemaleSocks.Value;
-                    if(stripAmount > 0 && female.IsClothesStateKind(6) && female.fileStatus.clothesState[6] != 2)
-                        female.SetClothesState(6, (byte)stripAmount);
 
-                    stripAmount = stripFemaleShoes.Value;
-                    if(stripAmount > 0 && female.IsClothesStateKind(7) && female.fileStatus.clothesState[7] != 2)
-                        female.SetClothesState(7, (byte)stripAmount);
-                }
+            var males = hScene.GetMales();
+            var females = hScene.GetFemales();
+            
+            if (stripMales && males != null && males.Length > 0)
+            {
+                Dictionary<int, Tools.ClothesStrip> stripAmounts = new Dictionary<int, Tools.ClothesStrip>
+                {
+                    {0, stripMaleTop.Value},
+                    {1, stripMaleBottom.Value},
+                    {4, stripMaleGloves.Value},
+                    {7, stripMaleShoes.Value}
+                };
+
+                foreach (var male in males.Where(male => male != null))
+                    foreach (var strip in stripAmounts.Where(strip => strip.Value > 0 && male.IsClothesStateKind(strip.Key) && male.fileStatus.clothesState[strip.Key] != 2))
+                        male.SetClothesState(strip.Key, (byte)strip.Value);
+            }
+            
+            if (stripFemales && females != null && females.Length > 0)
+            {
+                Dictionary<int, Tools.ClothesStrip> stripAmounts = new Dictionary<int, Tools.ClothesStrip>
+                {
+                    {0, stripFemaleTop.Value},
+                    {1, stripFemaleBottom.Value},
+                    {2, stripFemaleBra.Value},
+                    {3, stripFemalePanties.Value},
+                    {4, stripFemaleGloves.Value},
+                    {5, stripFemalePantyhose.Value},
+                    {6, stripFemaleSocks.Value},
+                    {7, stripFemaleShoes.Value}
+                };
+
+                foreach (var female in females.Where(female => female != null))
+                    foreach (var strip in stripAmounts.Where(strip => strip.Value > 0 && female.IsClothesStateKind(strip.Key) && female.fileStatus.clothesState[strip.Key] != 2))
+                        female.SetClothesState(strip.Key, (byte)strip.Value);
+            }
         }
     }
 }
