@@ -9,17 +9,17 @@ This plugin fixes HScene performance bugs and adds extra features
 * Optimize SkinnedCollisionHelpers (~15-25 FPS boost during Service and Insert)  
 * Add tears to female character after reaching weakness during H  
 * Toggle ON/OFF H Camera maximum position and zoom maximum limits  
-* Strip male/futa pants on H start **(See notes #1)**  
-* Strip male/futa pants on H anim change **(See notes #1)**  
+* Prevent default clothes strip when changing animation  
+* Strip male/female clothes parts during H start or anim change **(See notes #1)**  
 * Change H Point search range  
 * Keep H buttons interactive during orgasm **(See notes #2)**  
-* Retain cum after H (can be cleaned by bathing / changing clothes)
-* Character position draggers
-* Close eyes when reached weakness during H
+* Retain cum after H (can be cleaned by bathing / changing clothes)  
+* Character position UI with ability to select multiple characters and axis  
+* Close eyes, turn off blinking weakness/all the time during H    
 * Clean or keep cum on Merchant after H (if retain is enabled)  
 * Always heart gauge  
-* Auto finish  
 * Count till weakness modifier  
+* Autofinish with options like inside/outside/together/random  
 
 **Download:**  
 * Download the latest `AI_BetterHScenes.zip` from https://github.com/Mantas-2155X/AI_BetterHScenes/releases  
