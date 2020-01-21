@@ -22,7 +22,7 @@ namespace AI_BetterHScenes
     [BepInPlugin(nameof(AI_BetterHScenes), nameof(AI_BetterHScenes), VERSION)][BepInProcess("AI-Syoujyo")]
     public class AI_BetterHScenes : BaseUnityPlugin
     {
-        public const string VERSION = "2.2.0";
+        public const string VERSION = "2.2.1";
 
         public new static ManualLogSource Logger;
 
@@ -373,7 +373,7 @@ namespace AI_BetterHScenes
             
             foreach (var female in females.Where(female => female != null))
             {
-                var agent = agentTable.First(pair => pair.Value != null && pair.Value.ChaControl == female).Value;
+                var agent = agentTable.FirstOrDefault(pair => pair.Value != null && pair.Value.ChaControl == female).Value;
                 if (agent == null)
                     continue;
                 
