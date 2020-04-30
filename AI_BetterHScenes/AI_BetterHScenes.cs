@@ -22,7 +22,7 @@ namespace AI_BetterHScenes
     [BepInPlugin(nameof(AI_BetterHScenes), nameof(AI_BetterHScenes), VERSION)][BepInProcess("AI-Syoujyo")]
     public class AI_BetterHScenes : BaseUnityPlugin
     {
-        public const string VERSION = "2.2.1";
+        public const string VERSION = "2.2.2";
 
         public new static ManualLogSource Logger;
 
@@ -57,9 +57,13 @@ namespace AI_BetterHScenes
         private static ConfigEntry<Tools.OffHStartAnimChange> stripMaleClothes { get; set; }
         private static ConfigEntry<Tools.ClothesStrip> stripMaleTop { get; set; }
         private static ConfigEntry<Tools.ClothesStrip> stripMaleBottom { get; set; }
+        private static ConfigEntry<Tools.ClothesStrip> stripMaleBra { get; set; }
+        private static ConfigEntry<Tools.ClothesStrip> stripMalePanties { get; set; }
         private static ConfigEntry<Tools.ClothesStrip> stripMaleGloves { get; set; }
+        private static ConfigEntry<Tools.ClothesStrip> stripMalePantyhose { get; set; }
+        private static ConfigEntry<Tools.ClothesStrip> stripMaleSocks { get; set; }
         private static ConfigEntry<Tools.ClothesStrip> stripMaleShoes { get; set; }
-
+        
         private static ConfigEntry<Tools.OffHStartAnimChange> stripFemaleClothes { get; set; }
         private static ConfigEntry<Tools.ClothesStrip> stripFemaleTop { get; set; }
         private static ConfigEntry<Tools.ClothesStrip> stripFemaleBottom { get; set; }
@@ -107,7 +111,11 @@ namespace AI_BetterHScenes
             stripMaleClothes = Config.Bind("QoL > Clothes", "Should strip male clothes", Tools.OffHStartAnimChange.OnHStart, new ConfigDescription("Should strip male clothes during H"));
             stripMaleTop = Config.Bind("QoL > Clothes", "Strip male top", Tools.ClothesStrip.All, new ConfigDescription("Strip male top during H"));
             stripMaleBottom = Config.Bind("QoL > Clothes", "Strip male bottom", Tools.ClothesStrip.All, new ConfigDescription("Strip male bottom during H"));
+            stripMaleBra = Config.Bind("QoL > Clothes", "Strip male bra", Tools.ClothesStrip.Half, new ConfigDescription("Strip male (futa) bra during H"));
+            stripMalePanties = Config.Bind("QoL > Clothes", "Strip male panties", Tools.ClothesStrip.Half, new ConfigDescription("Strip male (futa) panties during H"));
             stripMaleGloves = Config.Bind("QoL > Clothes", "Strip male gloves", Tools.ClothesStrip.Off, new ConfigDescription("Strip male gloves during H"));
+            stripMalePantyhose = Config.Bind("QoL > Clothes", "Strip male pantyhose", Tools.ClothesStrip.Half, new ConfigDescription("Strip male (futa) pantyhose during H"));
+            stripMaleSocks = Config.Bind("QoL > Clothes", "Strip male socks", Tools.ClothesStrip.Off, new ConfigDescription("Strip male (futa) socks during H"));
             stripMaleShoes = Config.Bind("QoL > Clothes", "Strip male shoes", Tools.ClothesStrip.Off, new ConfigDescription("Strip male shoes during H"));
 
             stripFemaleClothes = Config.Bind("QoL > Clothes", "Should strip female clothes", Tools.OffHStartAnimChange.OnHStartAndAnimChange, new ConfigDescription("Should strip female clothes during H"));
@@ -499,7 +507,11 @@ namespace AI_BetterHScenes
                 {
                     {0, stripMaleTop.Value},
                     {1, stripMaleBottom.Value},
+                    {2, stripMaleBra.Value},
+                    {3, stripMalePanties.Value},
                     {4, stripMaleGloves.Value},
+                    {5, stripMalePantyhose.Value},
+                    {6, stripMaleSocks.Value},
                     {7, stripMaleShoes.Value}
                 };
 
