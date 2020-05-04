@@ -22,7 +22,7 @@ namespace AI_BetterHScenes
     [BepInPlugin(nameof(AI_BetterHScenes), nameof(AI_BetterHScenes), VERSION)][BepInProcess("AI-Syoujyo")]
     public class AI_BetterHScenes : BaseUnityPlugin
     {
-        public const string VERSION = "2.2.2";
+        public const string VERSION = "2.2.3";
 
         public new static ManualLogSource Logger;
 

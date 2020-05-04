@@ -133,7 +133,7 @@ namespace AI_BetterHScenes
             if (AI_BetterHScenes.map == null)
                 AI_BetterHScenes.map = GameObject.Find("map_01_data");
 
-            AI_BetterHScenes.mapSimulation = GameObject.Find("CommonSpace/MapRoot/MapSimulation(Clone)");
+            AI_BetterHScenes.mapSimulation = GameObject.Find("CommonSpace/MapRoot/MapSimulation(Clone)/EnviroSkyGroup(Clone)");
             AI_BetterHScenes.collisionHelpers = new List<SkinnedCollisionHelper>();
             
             AI_BetterHScenes.hScene = __instance;
